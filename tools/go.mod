@@ -9,5 +9,5 @@ require (
 	github.com/segmentio/golines v0.4.0
 	github.com/vasi-stripe/gogroup v0.0.0-20200806161525-b5d7f67a97b5
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
-	golang.org/x/tools v0.1.3
+	golang.org/x/tools v0.1.4
 )
