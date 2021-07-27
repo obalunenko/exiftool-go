@@ -568,8 +568,8 @@ github.com/sanposhiho/wastedassign/v2 v2.0.6/go.mod h1:KyZ0MWTwxxBmfwn33zh3k1dms
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg65j358z/aeFdxmN0P9QXhEzd20vsDc=
 github.com/securego/gosec/v2 v2.8.0 h1:iHg9cVmHWf5n6/ijUJ4F10h5bKlNtvXmcWzRw0lxiKE=
 github.com/securego/gosec/v2 v2.8.0/go.mod h1:hJZ6NT5TqoY+jmOsaxAV4cXoEdrMRLVaNPnSpUCvCZs=
-github.com/segmentio/golines v0.4.0 h1:IeNsx16iDng+0rC69ZRacTu9Kvk/MtO2vxztq03as4k=
-github.com/segmentio/golines v0.4.0/go.mod h1:xWPVv0hvYMEnV9mwILVKeJB1C6sPvnp2VD1WBs3jLQE=
+github.com/segmentio/golines v0.5.0 h1:FxTOrpBd0/5t4MchrXGxUs23vq5vr+YrcBVJUIY0+M8=
+github.com/segmentio/golines v0.5.0/go.mod h1:xWPVv0hvYMEnV9mwILVKeJB1C6sPvnp2VD1WBs3jLQE=
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
 github.com/sergi/go-diff v1.1.0 h1:we8PVUC3FE2uYfodKH/nBHMSetSfHDR6scGdBi+erh0=
 github.com/sergi/go-diff v1.1.0/go.mod h1:STckp+ISIX8hZLjrqAeVduY0gWCT9IjLuqbuNXdaHfM=
