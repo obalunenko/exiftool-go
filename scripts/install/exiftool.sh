@@ -1,48 +1,47 @@
-#!/bin/bash
+#!/bin/sh
 
-set -Eeuo pipefail
+set -eu
 
-SCRIPT_NAME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)"
-REPO_ROOT="$(cd ${SCRIPT_DIR} && git rev-parse --show-toplevel)"
+SCRIPT_NAME="$(basename "$0")"
 
 echo "${SCRIPT_NAME} is running... "
 
-EXIFTOOL_BASE_NAME=Image-ExifTool
+EXIFTOOL_BASE_NAME=exiftool
 EXIFTOOL_VERSION=12.26
 EXIFTOOL_ZIP=${EXIFTOOL_BASE_NAME}-${EXIFTOOL_VERSION}.tar.gz
 
-function cleanup() {
-  trap - SIGINT SIGTERM ERR EXIT
+SUDO_CMD=""
+
+cleanup() {
   echo "cleanup running"
   ${SUDO_CMD}rm -rf ${EXIFTOOL_ZIP}
   ${SUDO_CMD}rm -rf ${EXIFTOOL_BASE_NAME}-${EXIFTOOL_VERSION}
 }
 
-trap cleanup SIGINT SIGTERM ERR EXIT
+# https://github.com/exiftool/exiftool/archive/refs/tags/12.28.tar.gz
 
-SUDO_CMD=""
-
-function downloadExiftool() {
+downloadExiftool() {
   echo "Gonna to download ${EXIFTOOL_ZIP}"
 
-  wget -O ${EXIFTOOL_ZIP} https://exiftool.org/${EXIFTOOL_ZIP} &&
-    ${SUDO_CMD}gzip -dc ${EXIFTOOL_ZIP} | tar -xf - &&
-    cd Image-ExifTool-${EXIFTOOL_VERSION} || exit 1 &&
+  wget --no-check-certificate -O ${EXIFTOOL_ZIP} https://github.com/exiftool/exiftool/archive/refs/tags/${EXIFTOOL_VERSION}.tar.gz &&
+    tar -xvf ${EXIFTOOL_ZIP} &&
+    cd ${EXIFTOOL_BASE_NAME}-${EXIFTOOL_VERSION} || exit 1 &&
     perl Makefile.PL &&
     ${SUDO_CMD}make install &&
     cd - || exit 1
 }
 
-function osxInstall() {
+osxInstall() {
   echo "OSX"
 
   SUDO_CMD="sudo "
 
   downloadExiftool
+
+  cleanup
 }
 
-function linuxInstall() {
+linuxInstall() {
   echo "LINUX"
 
   DISTRO_ID=$(grep '^ID=' /etc/os-release | sed "s/ID=//")
@@ -57,10 +56,14 @@ function linuxInstall() {
   ubuntu*)
     SUDO_CMD="sudo "
     downloadExiftool
+    ;;
   esac
+
+  cleanup
 }
 
-case "$OSTYPE" in
+OS_TYPE="$(uname -s | tr '[:upper:]' '[:lower:]')"
+case "$OS_TYPE" in
 darwin*)
   osxInstall
   ;;
@@ -68,8 +71,8 @@ linux*)
   linuxInstall
   ;;
 msys* | cygwin*) echo "WINDOWS" ;;
-  ## TODO(obalunenko): add windows installation.
-*) echo "unknown: $OSTYPE" ;;
+  ## TODO(o.balunenko): add windows installation.
+*) echo "unknown: $OS_TYPE" ;;
 esac
 
 echo "Exiftool version: $(exiftool -ver)"
