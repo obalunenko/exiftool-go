@@ -23,7 +23,7 @@ jobs:
     name: Run linters
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       
@@ -47,7 +47,7 @@ jobs:
     name: Run Tests
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       
@@ -71,7 +71,7 @@ jobs:
     name: Run Tests
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       
