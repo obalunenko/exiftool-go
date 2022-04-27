@@ -24,7 +24,7 @@ github.com/alexkohler/prealloc/pkg
 github.com/ashanbrown/forbidigo/forbidigo
 # github.com/ashanbrown/makezero v1.1.1
 github.com/ashanbrown/makezero/makezero
-# github.com/axw/gocov v1.0.0
+# github.com/axw/gocov v1.1.0
 ## explicit
 github.com/axw/gocov
 github.com/axw/gocov/gocov
