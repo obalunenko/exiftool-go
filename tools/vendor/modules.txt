@@ -63,7 +63,7 @@ github.com/daixiang0/gci/pkg/gci/imports
 github.com/daixiang0/gci/pkg/gci/sections
 github.com/daixiang0/gci/pkg/gci/specificity
 github.com/daixiang0/gci/pkg/io
-# github.com/dave/dst v0.26.2
+# github.com/dave/dst v0.27.0
 github.com/dave/dst
 github.com/dave/dst/decorator
 github.com/dave/dst/decorator/resolver
@@ -365,7 +365,7 @@ github.com/sanposhiho/wastedassign/v2
 github.com/securego/gosec/v2
 github.com/securego/gosec/v2/cwe
 github.com/securego/gosec/v2/rules
-# github.com/segmentio/golines v0.9.0
+# github.com/segmentio/golines v0.10.0
 ## explicit
 github.com/segmentio/golines
 # github.com/shazow/go-diff v0.0.0-20160112020656-b6b7b6733b8c
@@ -448,7 +448,7 @@ github.com/yagipy/maintidx/pkg/halstvol
 github.com/yeya24/promlinter
 # gitlab.com/bosi/decorder v0.2.1
 gitlab.com/bosi/decorder
-# golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
+# golang.org/x/crypto v0.0.0-20220517005047-85d78b3ac167
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/exp/typeparams v0.0.0-20220218215828-6cf2b201936e
 golang.org/x/exp/typeparams
