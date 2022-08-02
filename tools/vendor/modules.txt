@@ -4,12 +4,12 @@
 github.com/Antonboom/errname/pkg/analyzer
 # github.com/Antonboom/nilnil v0.1.1
 github.com/Antonboom/nilnil/pkg/analyzer
-# github.com/BurntSushi/toml v1.1.0
+# github.com/BurntSushi/toml v1.2.0
 github.com/BurntSushi/toml
 github.com/BurntSushi/toml/internal
 # github.com/Djarvur/go-err113 v0.0.0-20210108212216-aea10b59be24
 github.com/Djarvur/go-err113
-# github.com/GaijinEntertainment/go-exhaustruct/v2 v2.2.0
+# github.com/GaijinEntertainment/go-exhaustruct/v2 v2.2.2
 github.com/GaijinEntertainment/go-exhaustruct/v2/pkg/analyzer
 # github.com/Masterminds/semver v1.5.0
 github.com/Masterminds/semver
@@ -22,7 +22,7 @@ github.com/alecthomas/template/parse
 github.com/alecthomas/units
 # github.com/alexkohler/prealloc v1.0.0
 github.com/alexkohler/prealloc/pkg
-# github.com/alingse/asasalint v0.0.10
+# github.com/alingse/asasalint v0.0.11
 github.com/alingse/asasalint
 # github.com/ashanbrown/forbidigo v1.3.0
 github.com/ashanbrown/forbidigo/forbidigo
@@ -56,7 +56,7 @@ github.com/cespare/xxhash/v2
 github.com/charithe/durationcheck
 # github.com/chavacava/garif v0.0.0-20220316182200-5cad0b5181d4
 github.com/chavacava/garif
-# github.com/daixiang0/gci v0.4.3
+# github.com/daixiang0/gci v0.5.0
 github.com/daixiang0/gci/pkg/config
 github.com/daixiang0/gci/pkg/format
 github.com/daixiang0/gci/pkg/gci
@@ -145,7 +145,7 @@ github.com/golangci/go-misc/deadcode
 # github.com/golangci/gofmt v0.0.0-20190930125516-244bba706f1a
 github.com/golangci/gofmt/gofmt
 github.com/golangci/gofmt/goimports
-# github.com/golangci/golangci-lint v1.47.2
+# github.com/golangci/golangci-lint v1.47.3
 ## explicit
 github.com/golangci/golangci-lint/cmd/golangci-lint
 github.com/golangci/golangci-lint/internal/cache
@@ -358,7 +358,7 @@ github.com/quasilyte/gogrep/nodetag
 github.com/quasilyte/regex/syntax
 # github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567
 github.com/quasilyte/stdinfo
-# github.com/ryancurrah/gomodguard v1.2.3
+# github.com/ryancurrah/gomodguard v1.2.4
 github.com/ryancurrah/gomodguard
 # github.com/ryanrolds/sqlclosecheck v0.3.0
 github.com/ryanrolds/sqlclosecheck/pkg/analyzer
@@ -373,11 +373,11 @@ github.com/securego/gosec/v2/rules
 github.com/segmentio/golines
 # github.com/shazow/go-diff v0.0.0-20160112020656-b6b7b6733b8c
 github.com/shazow/go-diff/difflib
-# github.com/sirupsen/logrus v1.8.1
+# github.com/sirupsen/logrus v1.9.0
 github.com/sirupsen/logrus
 # github.com/sivchari/containedctx v1.0.2
 github.com/sivchari/containedctx
-# github.com/sivchari/nosnakecase v1.5.0
+# github.com/sivchari/nosnakecase v1.7.0
 github.com/sivchari/nosnakecase
 # github.com/sivchari/tenv v1.7.0
 github.com/sivchari/tenv
@@ -451,7 +451,7 @@ github.com/yagipy/maintidx/pkg/cyc
 github.com/yagipy/maintidx/pkg/halstvol
 # github.com/yeya24/promlinter v0.2.0
 github.com/yeya24/promlinter
-# gitlab.com/bosi/decorder v0.2.2
+# gitlab.com/bosi/decorder v0.2.3
 gitlab.com/bosi/decorder
 # go.uber.org/atomic v1.7.0
 go.uber.org/atomic
@@ -473,9 +473,9 @@ golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/modfile
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/sync v0.0.0-20220513210516-0976fa681c29
+# golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.0.0-20220702020025-31831981b65f
+# golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
@@ -487,7 +487,7 @@ golang.org/x/term
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
 golang.org/x/text/width
-# golang.org/x/tools v0.1.12-0.20220628192153-7743d1d949f1
+# golang.org/x/tools v0.1.12
 ## explicit
 golang.org/x/tools/cmd/cover
 golang.org/x/tools/cover
@@ -541,6 +541,7 @@ golang.org/x/tools/go/gcexportdata
 golang.org/x/tools/go/internal/cgo
 golang.org/x/tools/go/internal/gcimporter
 golang.org/x/tools/go/internal/packagesdriver
+golang.org/x/tools/go/internal/pkgbits
 golang.org/x/tools/go/loader
 golang.org/x/tools/go/packages
 golang.org/x/tools/go/ssa
@@ -557,7 +558,6 @@ golang.org/x/tools/internal/fastwalk
 golang.org/x/tools/internal/gocommand
 golang.org/x/tools/internal/gopathwalk
 golang.org/x/tools/internal/imports
-golang.org/x/tools/internal/lsp/fuzzy
 golang.org/x/tools/internal/packagesinternal
 golang.org/x/tools/internal/typeparams
 golang.org/x/tools/internal/typesinternal
@@ -600,7 +600,7 @@ gopkg.in/ini.v1
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.1
 gopkg.in/yaml.v3
-# honnef.co/go/tools v0.3.2
+# honnef.co/go/tools v0.3.3
 honnef.co/go/tools/analysis/code
 honnef.co/go/tools/analysis/edit
 honnef.co/go/tools/analysis/facts/deprecated
