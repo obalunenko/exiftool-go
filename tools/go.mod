@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/axw/gocov v1.1.0
-	github.com/golangci/golangci-lint v1.47.3
+	github.com/golangci/golangci-lint v1.48.0
 	github.com/matm/gocov-html v0.0.0-20200509184451-71874e2e203b
 	github.com/segmentio/golines v0.11.0
 	github.com/vasi-stripe/gogroup v0.0.0-20200806161525-b5d7f67a97b5
