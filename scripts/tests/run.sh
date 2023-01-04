@@ -15,8 +15,11 @@ REPO_ROOT="$(cd ${SCRIPT_DIR} && git rev-parse --show-toplevel)"
 
 echo "${SCRIPT_NAME} is running... "
 
-export GO111MODULE=on
+GOTEST="go test -v "
+if command -v "gotestsum" &>/dev/null; then
+  GOTEST="gotestsum --format pkgname-and-test-fails --"
+fi
 
-go test -v -race ./...
+${GOTEST} -race ./...
 
 echo "${SCRIPT_NAME} done."

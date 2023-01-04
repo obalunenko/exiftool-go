@@ -1,4 +1,4 @@
-// +build !integration_test
+//go:build !integration_test
 
 package exif_test
 

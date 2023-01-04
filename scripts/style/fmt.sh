@@ -2,21 +2,19 @@
 
 set -Eeuo pipefail
 
-function cleanup() {
-  trap - SIGINT SIGTERM ERR EXIT
-}
+SCRIPT_NAME="$(basename "$0")"
+SCRIPT_DIR="$(dirname "$0")"
+REPO_ROOT="$(cd "${SCRIPT_DIR}" && git rev-parse --show-toplevel)"
+SCRIPTS_DIR="${REPO_ROOT}/scripts"
 
-trap cleanup SIGINT SIGTERM ERR EXIT
-
-SCRIPT_NAME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)"
-REPO_ROOT="$(cd ${SCRIPT_DIR} && git rev-parse --show-toplevel)"
+source "${SCRIPTS_DIR}/helpers-source.sh"
 
 echo "${SCRIPT_NAME} is running... "
 
+checkInstalled 'gofmt'
+
 GO_FILES=$(find . -type f -name '*.go' | grep -v 'vendor' | grep -v '.git')
 
-echo "gofmt"
-gofmt -s -w -l ${GO_FILES}
+gofmt -s -w ${GO_FILES}
 
 echo "${SCRIPT_NAME} done."
