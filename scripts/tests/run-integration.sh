@@ -17,6 +17,11 @@ echo "${SCRIPT_NAME} is running... "
 
 export GO111MODULE=on
 
-go test -tags=integration_test -v -race --count 1 ./...
+GOTEST="go test -v "
+if command -v "gotestsum" &>/dev/null; then
+  GOTEST="gotestsum --format pkgname-and-test-fails --"
+fi
+
+${GOTEST} -tags=integration_test -race ./...
 
 echo "${SCRIPT_NAME} done."
