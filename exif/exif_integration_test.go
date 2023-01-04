@@ -30,7 +30,7 @@ func TestExtractMetadata(t *testing.T) {
 			},
 			want: exif.Metadata{
 				{
-					FileSize:          "4.1 KiB",
+					FileSize:          "4.1 kB",
 					FileType:          "JPEG",
 					FileTypeExtension: "jpg",
 					FilePermissions:   "-rw-r--r--",
@@ -50,7 +50,7 @@ func TestExtractMetadata(t *testing.T) {
 			},
 			want: exif.Metadata{
 				{
-					FileSize:          "6.4 KiB",
+					FileSize:          "6.5 kB",
 					FileType:          "JPEG",
 					FileTypeExtension: "jpg",
 					FilePermissions:   "-rw-r--r--",
@@ -70,7 +70,7 @@ func TestExtractMetadata(t *testing.T) {
 			},
 			want: exif.Metadata{
 				{
-					FileSize:          "725 KiB",
+					FileSize:          "742 kB",
 					FileType:          "AVI",
 					FileTypeExtension: "avi",
 					FilePermissions:   "-rw-r--r--",
@@ -84,13 +84,13 @@ func TestExtractMetadata(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "avi video",
+			name: "OGV video",
 			args: args{
 				filepath: filepath.Join("testdata", "file_example_OGG_480_1_7mg.ogg"),
 			},
 			want: exif.Metadata{
 				{
-					FileSize:          "1694 KiB",
+					FileSize:          "1735 kB",
 					FileType:          "OGV",
 					FileTypeExtension: "ogv",
 					FilePermissions:   "-rw-r--r--",
@@ -104,13 +104,13 @@ func TestExtractMetadata(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "avi video",
+			name: "WEBP image",
 			args: args{
 				filepath: filepath.Join("testdata", "file_example_WEBP_50kB.webp"),
 			},
 			want: exif.Metadata{
 				{
-					FileSize:          "49 KiB",
+					FileSize:          "50 kB",
 					FileType:          "WEBP",
 					FileTypeExtension: "webp",
 					FilePermissions:   "-rw-r--r--",
