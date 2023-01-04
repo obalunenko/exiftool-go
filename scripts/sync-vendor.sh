@@ -1,35 +1,26 @@
-#!/bin/bash
+#!/bin/sh
 
-set -Eeuo pipefail
+set -eu
 
-function cleanup() {
-  trap - SIGINT SIGTERM ERR EXIT
-  echo "cleanup running"
-}
-
-trap cleanup SIGINT SIGTERM ERR EXIT
-
-SCRIPT_NAME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)"
+SCRIPT_NAME="$(basename "$0")"
+SCRIPT_DIR="$(dirname "$0")"
 REPO_ROOT="$(cd ${SCRIPT_DIR} && git rev-parse --show-toplevel)"
 TOOLS_DIR=${REPO_ROOT}/tools
 
 echo "${SCRIPT_NAME} is running... "
 
-go env -w GOPROXY=https://goproxy.io
-
-sync-vendor() {
+sync_vendor() {
   go mod tidy -v
   go mod vendor
   go mod verify
 }
 
 cd ${REPO_ROOT} || exit 1
-echo $(pwd)
-sync-vendor
+pwd
+sync_vendor
 
 cd ${TOOLS_DIR} || exit 1
-echo $(pwd)
-sync-vendor
+pwd
+sync_vendor
 
 echo "${SCRIPT_NAME} done."

@@ -2,24 +2,17 @@
 
 set -Eeuo pipefail
 
-function cleanup() {
-  trap - SIGINT SIGTERM ERR EXIT
-}
+SCRIPT_NAME="$(basename "$0")"
+SCRIPT_DIR="$(dirname "$0")"
+REPO_ROOT="$(cd "${SCRIPT_DIR}" && git rev-parse --show-toplevel)"
+SCRIPTS_DIR="${REPO_ROOT}/scripts"
 
-trap cleanup SIGINT SIGTERM ERR EXIT
-
-SCRIPT_NAME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)"
-REPO_ROOT="$(cd ${SCRIPT_DIR} && git rev-parse --show-toplevel)"
+source "${SCRIPTS_DIR}/helpers-source.sh"
 
 echo "${SCRIPT_NAME} is running... "
 
-if [[ -f "$(go env GOPATH)/bin/gogroup" ]] || [[ -f "/usr/local/bin/gogroup" ]]; then
-  gogroup -order std,other,prefix=github.com/obalunenko/exiftool-go/ -rewrite $(find . -type f -name "*.go" | grep -v "vendor/" | grep -v ".git")
-else
-  printf "Cannot check gogroup, please run:
-    make install-tools \n"
-  exit 1
-fi
+checkInstalled 'goimports'
+
+goimports -local=github.com/obalunenko/instadiff-cli -w $(find . -type f -name "*.go" | grep -v "vendor/" | grep -v ".git")
 
 echo "${SCRIPT_NAME} done."

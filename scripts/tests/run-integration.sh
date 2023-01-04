@@ -17,6 +17,6 @@ echo "${SCRIPT_NAME} is running... "
 
 export GO111MODULE=on
 
-go test -tags=integration_test -v -race ./...
+go test -tags=integration_test -v -race --count 1 ./...
 
 echo "${SCRIPT_NAME} done."

@@ -28,11 +28,6 @@ echo "mode: atomic"
 tail -q -n +2 ./coverage/*.cov
 } >> ./coverage/full.cov
 
-gocov convert ./coverage/full.cov > ./coverage/full.json
-gocov report ./coverage/full.json
-gocov-html ./coverage/full.json >./coverage/full.html
-open ./coverage/full.html
-
-# go tool cover -html=./coverage/full.cov
+gocov convert "${COVER_DIR}/full.cov" >"${COVER_DIR}/full.json"
 
 echo "${SCRIPT_NAME} done."

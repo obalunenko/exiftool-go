@@ -2,21 +2,12 @@
 
 set -Eeuo pipefail
 
-function cleanup() {
-  trap - SIGINT SIGTERM ERR EXIT
-}
+SCRIPT_NAME="$(basename "$0")"
+SCRIPT_DIR="$(dirname "$0")"
 
-trap cleanup SIGINT SIGTERM ERR EXIT
-
-SCRIPT_NAME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)"
-REPO_ROOT="$(cd ${SCRIPT_DIR} && git rev-parse --show-toplevel)"
-
-# shellcheck disable=SC2046
 echo "${SCRIPT_NAME} is running... "
 
-# shellcheck disable=SC1090
-source "${SCRIPT_DIR}"/linters-source.sh
+source "${SCRIPT_DIR}/linters-source.sh"
 
 vet
 
