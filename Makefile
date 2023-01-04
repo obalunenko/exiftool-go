@@ -62,6 +62,9 @@ test-integration:
 	./scripts/tests/run-integration.sh
 .PHONY: test-integration
 
+test-full: test test-integration
+.PHONY: test-integration
+
 ## Test coverage report.
 test-cover:
 	./scripts/tests/coverage.sh
@@ -126,7 +129,7 @@ check-releaser:
 .PHONY: check-releaser
 
 ## Issue new release.
-new-version: test
+new-version: test-full
 	./scripts/release/new-version.sh
 .PHONY: new-release
 
