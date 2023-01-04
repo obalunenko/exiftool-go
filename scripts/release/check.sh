@@ -29,9 +29,7 @@ if [ -z "${VERSION}" ] || [ "${VERSION}" = "${SHORTCOMMIT}" ]
   VERSION="v0.0.0"
 fi
 
-
 VERSION="${VERSION}-local"
-
 
 BUILDINFO_VARS_PKG=github.com/obalunenko/version
 export GO_BUILD_LDFLAGS="-s -w \
