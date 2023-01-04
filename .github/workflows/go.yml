@@ -172,11 +172,6 @@ jobs:
           make test-cover
         shell: bash
 
-      - name: Tests report
-        run: |
-          make test-sonar-report
-        shell: bash
-
       - name: Prepare lint report
         run: |
           make lint-sonar

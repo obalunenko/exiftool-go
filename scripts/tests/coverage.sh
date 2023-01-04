@@ -27,4 +27,6 @@ tail -q -n +2 ./coverage/*.cov
 
 gocov convert "${COVER_DIR}/full.cov" >"${COVER_DIR}/full.json"
 
+gocov report "${COVER_DIR}/full.json"
+
 echo "${SCRIPT_NAME} done."

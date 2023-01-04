@@ -83,11 +83,6 @@ test-cover:
 	./scripts/tests/coverage.sh
 .PHONY: test-cover
 
-## Tests sonar report generate.
-test-sonar-report:
-	./scripts/tests/sonar-report.sh
-.PHONY: test-sonar-report
-
 ## Installs tools from vendor.
 install-tools: install-vendored-tools install-exiftool
 .PHONY: install-tools
