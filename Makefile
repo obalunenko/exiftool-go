@@ -33,22 +33,6 @@ help:
 	} \
 	{ lastLine = $$0 }' $(MAKEFILE_LIST)
 
-
-
-## Compile app
-compile-instadiff-cli: vet
-	./scripts/build/compile.sh
-.PHONY: compile-instadiff-cli
-
-## Build the app.
-build: compile-instadiff-cli
-.PHONY: build
-
-## recreate all generated code.
-generate:
-	./scripts/codegen/generate.sh
-.PHONY: generate
-
 ## vet project
 vet:
 	./scripts/linting/run-vet.sh
@@ -142,7 +126,7 @@ check-releaser:
 .PHONY: check-releaser
 
 ## Issue new release.
-new-version: test build
+new-version: test
 	./scripts/release/new-version.sh
 .PHONY: new-release
 
