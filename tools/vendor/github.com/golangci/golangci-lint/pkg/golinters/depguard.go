@@ -2,6 +2,8 @@ package golinters
 
 import (
 	"fmt"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -10,7 +12,6 @@ import (
 	"golang.org/x/tools/go/loader" //nolint:staticcheck // require changes in github.com/OpenPeeDeeP/depguard
 
 	"github.com/golangci/golangci-lint/pkg/config"
-	"github.com/golangci/golangci-lint/pkg/fsutils"
 	"github.com/golangci/golangci-lint/pkg/golinters/goanalysis"
 	"github.com/golangci/golangci-lint/pkg/lint/linter"
 	"github.com/golangci/golangci-lint/pkg/result"
@@ -105,6 +106,16 @@ func (d depGuard) run(pass *analysis.Pass) ([]goanalysis.Issue, error) {
 	return resIssues, nil
 }
 
+var separatorToReplace = regexp.QuoteMeta(string(filepath.Separator))
+
+// normalizePathInRegex normalizes path in regular expressions.
+// noop on Unix.
+// This replacing should be safe because "/" are disallowed in Windows
+// https://docs.microsoft.com/windows/win32/fileio/naming-a-file
+func normalizePathInRegex(path string) string {
+	return strings.ReplaceAll(path, "/", separatorToReplace)
+}
+
 type guardian struct {
 	*depguard.Depguard
 	pkgsWithErrorMessage map[string]string
@@ -113,7 +124,7 @@ type guardian struct {
 func newGuardian(settings *config.DepGuardSettings) (*guardian, error) {
 	var ignoreFileRules []string
 	for _, rule := range settings.IgnoreFileRules {
-		ignoreFileRules = append(ignoreFileRules, fsutils.NormalizePathInRegex(rule))
+		ignoreFileRules = append(ignoreFileRules, normalizePathInRegex(rule))
 	}
 
 	dg := &depguard.Depguard{
