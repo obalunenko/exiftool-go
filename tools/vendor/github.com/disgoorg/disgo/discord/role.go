@@ -12,6 +12,7 @@ var _ Mentionable = (*Role)(nil)
 // Role is a Guild Role object
 type Role struct {
 	ID          snowflake.ID `json:"id"`
+	GuildID     snowflake.ID `json:"guild_id,omitempty"` // not present in the API but we need it
 	Name        string       `json:"name"`
 	Description *string      `json:"description,omitempty"`
 	Color       int          `json:"color"`
@@ -50,6 +51,7 @@ type RoleTag struct {
 	BotID             *snowflake.ID `json:"bot_id,omitempty"`
 	IntegrationID     *snowflake.ID `json:"integration_id,omitempty"`
 	PremiumSubscriber bool          `json:"premium_subscriber"`
+	GuildConnections  bool          `json:"guild_connections"`
 }
 
 // RoleCreate is the payload to create a Role

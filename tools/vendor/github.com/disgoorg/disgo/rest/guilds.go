@@ -27,7 +27,7 @@ type Guilds interface {
 	UpdateChannelPositions(guildID snowflake.ID, guildChannelPositionUpdates []discord.GuildChannelPositionUpdate, opts ...RequestOpt) error
 
 	GetRoles(guildID snowflake.ID, opts ...RequestOpt) ([]discord.Role, error)
-	GetRole(guildID snowflake.ID, roleID snowflake.ID, opts ...RequestOpt) ([]discord.Role, error)
+	GetRole(guildID snowflake.ID, roleID snowflake.ID, opts ...RequestOpt) (*discord.Role, error)
 	CreateRole(guildID snowflake.ID, createRole discord.RoleCreate, opts ...RequestOpt) (*discord.Role, error)
 	UpdateRole(guildID snowflake.ID, roleID snowflake.ID, roleUpdate discord.RoleUpdate, opts ...RequestOpt) (*discord.Role, error)
 	UpdateRolePositions(guildID snowflake.ID, rolePositionUpdates []discord.RolePositionUpdate, opts ...RequestOpt) ([]discord.Role, error)
@@ -49,7 +49,7 @@ type Guilds interface {
 
 	GetGuildVoiceRegions(guildID snowflake.ID, opts ...RequestOpt) ([]discord.VoiceRegion, error)
 
-	GetAuditLog(guildID snowflake.ID, userID snowflake.ID, actionType discord.AuditLogEvent, before snowflake.ID, limit int, opts ...RequestOpt) (*discord.AuditLog, error)
+	GetAuditLog(guildID snowflake.ID, userID snowflake.ID, actionType discord.AuditLogEvent, before snowflake.ID, after snowflake.ID, limit int, opts ...RequestOpt) (*discord.AuditLog, error)
 	GetAuditLogPage(guildID snowflake.ID, userID snowflake.ID, actionType discord.AuditLogEvent, startID snowflake.ID, limit int, opts ...RequestOpt) AuditLogPage
 
 	GetGuildWelcomeScreen(guildID snowflake.ID, opts ...RequestOpt) (*discord.GuildWelcomeScreen, error)
@@ -119,26 +119,45 @@ func (s *guildImpl) UpdateChannelPositions(guildID snowflake.ID, guildChannelPos
 
 func (s *guildImpl) GetRoles(guildID snowflake.ID, opts ...RequestOpt) (roles []discord.Role, err error) {
 	err = s.client.Do(GetRoles.Compile(nil, guildID), nil, &roles, opts...)
+	if err == nil {
+		for i := range roles {
+			roles[i].GuildID = guildID
+		}
+	}
 	return
 }
 
-func (s *guildImpl) GetRole(guildID snowflake.ID, roleID snowflake.ID, opts ...RequestOpt) (role []discord.Role, err error) {
+func (s *guildImpl) GetRole(guildID snowflake.ID, roleID snowflake.ID, opts ...RequestOpt) (role *discord.Role, err error) {
 	err = s.client.Do(GetRole.Compile(nil, guildID, roleID), nil, &role, opts...)
+	if err == nil {
+		role.GuildID = guildID
+	}
 	return
 }
 
 func (s *guildImpl) CreateRole(guildID snowflake.ID, createRole discord.RoleCreate, opts ...RequestOpt) (role *discord.Role, err error) {
 	err = s.client.Do(CreateRole.Compile(nil, guildID), createRole, &role, opts...)
+	if err == nil {
+		role.GuildID = guildID
+	}
 	return
 }
 
 func (s *guildImpl) UpdateRole(guildID snowflake.ID, roleID snowflake.ID, roleUpdate discord.RoleUpdate, opts ...RequestOpt) (role *discord.Role, err error) {
 	err = s.client.Do(UpdateRole.Compile(nil, guildID, roleID), roleUpdate, &role, opts...)
+	if err == nil {
+		role.GuildID = guildID
+	}
 	return
 }
 
 func (s *guildImpl) UpdateRolePositions(guildID snowflake.ID, rolePositionUpdates []discord.RolePositionUpdate, opts ...RequestOpt) (roles []discord.Role, err error) {
 	err = s.client.Do(UpdateRolePositions.Compile(nil, guildID), rolePositionUpdates, &roles, opts...)
+	if err == nil {
+		for i := range roles {
+			roles[i].GuildID = guildID
+		}
+	}
 	return
 }
 
@@ -226,7 +245,7 @@ func (s *guildImpl) GetGuildVoiceRegions(guildID snowflake.ID, opts ...RequestOp
 	return
 }
 
-func (s *guildImpl) GetAuditLog(guildID snowflake.ID, userID snowflake.ID, actionType discord.AuditLogEvent, before snowflake.ID, limit int, opts ...RequestOpt) (auditLog *discord.AuditLog, err error) {
+func (s *guildImpl) GetAuditLog(guildID snowflake.ID, userID snowflake.ID, actionType discord.AuditLogEvent, before snowflake.ID, after snowflake.ID, limit int, opts ...RequestOpt) (auditLog *discord.AuditLog, err error) {
 	values := discord.QueryValues{}
 	if userID != 0 {
 		values["user_id"] = userID
@@ -235,7 +254,10 @@ func (s *guildImpl) GetAuditLog(guildID snowflake.ID, userID snowflake.ID, actio
 		values["action_type"] = actionType
 	}
 	if before != 0 {
-		values["before"] = guildID
+		values["before"] = before
+	}
+	if after != 0 {
+		values["after"] = after
 	}
 	if limit != 0 {
 		values["limit"] = limit
@@ -246,8 +268,8 @@ func (s *guildImpl) GetAuditLog(guildID snowflake.ID, userID snowflake.ID, actio
 
 func (s *guildImpl) GetAuditLogPage(guildID snowflake.ID, userID snowflake.ID, actionType discord.AuditLogEvent, startID snowflake.ID, limit int, opts ...RequestOpt) AuditLogPage {
 	return AuditLogPage{
-		getItems: func(before snowflake.ID) (discord.AuditLog, error) {
-			log, err := s.GetAuditLog(guildID, userID, actionType, before, limit, opts...)
+		getItems: func(before snowflake.ID, after snowflake.ID) (discord.AuditLog, error) {
+			log, err := s.GetAuditLog(guildID, userID, actionType, before, after, limit, opts...)
 			var finalLog discord.AuditLog
 			if log != nil {
 				finalLog = *log
