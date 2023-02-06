@@ -11,7 +11,7 @@ require (
 	github.com/obalunenko/coverbadger v1.3.1
 	github.com/segmentio/golines v0.11.0
 	golang.org/x/tools v0.5.0
-	gotest.tools/gotestsum v1.8.2
+	gotest.tools/gotestsum v1.9.0
 )
 
 require (
