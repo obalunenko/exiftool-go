@@ -6,7 +6,7 @@ require (
 	github.com/axw/gocov v1.1.0
 	github.com/golangci/golangci-lint v1.51.2
 	github.com/goreleaser/goreleaser v1.16.0
-	github.com/matm/gocov-html v1.2.0
+	github.com/matm/gocov-html v1.3.0
 	github.com/mattn/goveralls v0.0.11
 	github.com/obalunenko/coverbadger v1.3.1
 	github.com/segmentio/golines v0.11.0
