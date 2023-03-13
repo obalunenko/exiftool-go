@@ -1328,8 +1328,8 @@ github.com/nunnatsa/ginkgolinter
 github.com/nunnatsa/ginkgolinter/gomegahandler
 github.com/nunnatsa/ginkgolinter/reverseassertion
 github.com/nunnatsa/ginkgolinter/types
-# github.com/obalunenko/coverbadger v1.3.1
-## explicit; go 1.19
+# github.com/obalunenko/coverbadger v1.4.0
+## explicit; go 1.20
 github.com/obalunenko/coverbadger/cmd/coverbadger
 github.com/obalunenko/coverbadger/internal/coverbadge
 # github.com/obalunenko/logger v0.5.1
