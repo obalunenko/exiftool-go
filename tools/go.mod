@@ -8,7 +8,7 @@ require (
 	github.com/goreleaser/goreleaser v1.16.0
 	github.com/matm/gocov-html v1.3.1
 	github.com/mattn/goveralls v0.0.11
-	github.com/obalunenko/coverbadger v1.3.1
+	github.com/obalunenko/coverbadger v1.4.0
 	github.com/segmentio/golines v0.11.0
 	golang.org/x/tools v0.7.0
 	golang.org/x/tools/cmd/cover v0.1.0-deprecated

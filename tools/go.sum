@@ -2520,8 +2520,8 @@ github.com/nwaples/rardecode v1.1.0/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWk
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=
-github.com/obalunenko/coverbadger v1.3.1 h1:Uj5L3Qz2S3ZOmuNQCRdnym81IhYV3rK9AIHPufKLGpQ=
-github.com/obalunenko/coverbadger v1.3.1/go.mod h1:DJlFMmzYuIvl7U0OTkTirrqltfNPzdE8de0o8MOulsg=
+github.com/obalunenko/coverbadger v1.4.0 h1:+7U6R/UfoEidlZqP/xFxXbAtxY8SfyQcwy1A1vXYlQc=
+github.com/obalunenko/coverbadger v1.4.0/go.mod h1:5WS+KbEu+9VaLGnm0H+BqjSCEBNQzaiulglmubtU86M=
 github.com/obalunenko/logger v0.5.1 h1:49DIEwy4sBvRzM/OtD/m7zITi5L3S5DtSYZ/WoUrnno=
 github.com/obalunenko/logger v0.5.1/go.mod h1:/GnmNcmEV7tAL9StHrs3nDkXAK+TEvChoNY+YYRZww4=
 github.com/obalunenko/version v1.1.0 h1:yVua7OHnK3+MJpendeMmAlfzVmq7R1h8MO3Ufz7HEec=
