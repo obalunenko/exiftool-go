@@ -12,7 +12,7 @@ require (
 	github.com/segmentio/golines v0.11.0
 	golang.org/x/tools v0.8.0
 	golang.org/x/tools/cmd/cover v0.1.0-deprecated
-	gotest.tools/gotestsum v1.9.0
+	gotest.tools/gotestsum v1.10.0
 )
 
 require (
