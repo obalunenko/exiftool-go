@@ -10,7 +10,7 @@ require (
 	github.com/mattn/goveralls v0.0.12
 	github.com/obalunenko/coverbadger v1.4.0
 	github.com/segmentio/golines v0.11.0
-	golang.org/x/tools v0.9.2
+	golang.org/x/tools v0.9.3
 	golang.org/x/tools/cmd/cover v0.1.0-deprecated
 	gotest.tools/gotestsum v1.10.0
 )
