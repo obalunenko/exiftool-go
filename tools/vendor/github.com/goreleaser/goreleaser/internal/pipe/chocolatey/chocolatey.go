@@ -31,6 +31,7 @@ var cmd cmder = stdCmd{}
 type Pipe struct{}
 
 func (Pipe) String() string                           { return "chocolatey packages" }
+func (Pipe) ContinueOnError() bool                    { return true }
 func (Pipe) Skip(ctx *context.Context) bool           { return len(ctx.Config.Chocolateys) == 0 }
 func (Pipe) Dependencies(_ *context.Context) []string { return []string{"choco"} }
 
@@ -217,18 +218,12 @@ func doPush(ctx *context.Context, art *artifact.Artifact) error {
 
 func buildNuspec(ctx *context.Context, choco config.Chocolatey) ([]byte, error) {
 	tpl := tmpl.New(ctx)
-	summary, err := tpl.Apply(choco.Summary)
-	if err != nil {
-		return nil, err
-	}
 
-	description, err := tpl.Apply(choco.Description)
-	if err != nil {
-		return nil, err
-	}
-
-	releaseNotes, err := tpl.Apply(choco.ReleaseNotes)
-	if err != nil {
+	if err := tpl.ApplyAll(
+		&choco.Summary,
+		&choco.Description,
+		&choco.ReleaseNotes,
+	); err != nil {
 		return nil, err
 	}
 
@@ -250,9 +245,9 @@ func buildNuspec(ctx *context.Context, choco config.Chocolatey) ([]byte, error) 
 			DocsURL:                  choco.DocsURL,
 			BugTrackerURL:            choco.BugTrackerURL,
 			Tags:                     choco.Tags,
-			Summary:                  summary,
-			Description:              description,
-			ReleaseNotes:             releaseNotes,
+			Summary:                  choco.Summary,
+			Description:              choco.Description,
+			ReleaseNotes:             choco.ReleaseNotes,
 		},
 		Files: Files{File: []File{
 			{Source: "tools\\**", Target: "tools"},
@@ -325,7 +320,7 @@ func dataFor(ctx *context.Context, cl client.Client, choco config.Chocolatey, ar
 // The intention is to be used to wrap the standard exec and provide the
 // ability to create a fake one for testing.
 type cmder interface {
-	// Exec executes an command.
+	// Exec executes a command.
 	Exec(*context.Context, string, ...string) ([]byte, error)
 }
 

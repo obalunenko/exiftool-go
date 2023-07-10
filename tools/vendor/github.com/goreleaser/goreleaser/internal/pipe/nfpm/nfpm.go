@@ -59,14 +59,6 @@ func (Pipe) Default(ctx *context.Context) error {
 		if fpm.Maintainer == "" {
 			deprecate.NoticeCustom(ctx, "nfpms.maintainer", "`{{ .Property }}` should always be set, check {{ .URL }} for more info")
 		}
-		if len(fpm.Replacements) != 0 {
-			deprecate.Notice(ctx, "nfpms.replacements")
-		}
-		for _, rfpm := range fpm.Overrides {
-			if len(rfpm.Replacements) != 0 {
-				deprecate.Notice(ctx, "nfpms.replacements")
-			}
-		}
 		ids.Inc(fpm.ID)
 	}
 
@@ -157,7 +149,6 @@ func create(ctx *context.Context, fpm config.NFPM, format string, binaries []*ar
 		}
 	}
 
-	bindDir := fpm.Bindir
 	if format == termuxFormat {
 		if !isSupportedTermuxArch(arch) {
 			log.Debugf("skipping termux.deb for %s as its not supported by termux", arch)
@@ -171,7 +162,7 @@ func create(ctx *context.Context, fpm config.NFPM, format string, binaries []*ar
 		)
 		infoArch = replacer.Replace(infoArch)
 		arch = replacer.Replace(arch)
-		bindDir = filepath.Join("/data/data/com.termux/files", bindDir)
+		fpm.Bindir = filepath.Join("/data/data/com.termux/files", fpm.Bindir)
 	}
 
 	overridden, err := mergeOverrides(fpm, format)
@@ -184,34 +175,25 @@ func create(ctx *context.Context, fpm config.NFPM, format string, binaries []*ar
 		return err
 	}
 
-	// nolint:staticcheck
 	t := tmpl.New(ctx).
-		WithArtifactReplacements(binaries[0], overridden.Replacements).
+		WithArtifact(binaries[0]).
 		WithExtraFields(tmpl.Fields{
 			"Release":     fpm.Release,
 			"Epoch":       fpm.Epoch,
 			"PackageName": packageName,
 		})
 
-	binDir, err := t.Apply(bindDir)
-	if err != nil {
+	if err := t.ApplyAll(
+		&fpm.Bindir,
+		&fpm.Homepage,
+		&fpm.Description,
+		&fpm.Maintainer,
+	); err != nil {
 		return err
 	}
 
-	homepage, err := t.Apply(fpm.Homepage)
-	if err != nil {
-		return err
-	}
-
-	description, err := t.Apply(fpm.Description)
-	if err != nil {
-		return err
-	}
-
-	maintainer, err := t.Apply(fpm.Maintainer)
-	if err != nil {
-		return err
-	}
+	// We cannot use t.ApplyAll on the following fields as they are shared
+	// across multiple nfpms.
 
 	debKeyFile, err := t.Apply(overridden.Deb.Signature.KeyFile)
 	if err != nil {
@@ -252,28 +234,12 @@ func create(ctx *context.Context, fpm config.NFPM, format string, binaries []*ar
 		})
 	}
 
-	if len(fpm.Deb.Lintian) > 0 {
-		lines := make([]string, 0, len(fpm.Deb.Lintian))
-		for _, ov := range fpm.Deb.Lintian {
-			lines = append(lines, fmt.Sprintf("%s: %s", packageName, ov))
+	if len(fpm.Deb.Lintian) > 0 && (format == "deb" || format == "termux.deb") {
+		lintian, err := setupLintian(ctx, fpm, packageName, format, arch)
+		if err != nil {
+			return err
 		}
-		lintianPath := filepath.Join(ctx.Config.Dist, "deb", packageName+"_"+arch, ".lintian")
-		if err := os.MkdirAll(filepath.Dir(lintianPath), 0o755); err != nil {
-			return fmt.Errorf("failed to write lintian file: %w", err)
-		}
-		if err := os.WriteFile(lintianPath, []byte(strings.Join(lines, "\n")), 0o644); err != nil {
-			return fmt.Errorf("failed to write lintian file: %w", err)
-		}
-
-		log.Debugf("creating %q", lintianPath)
-		contents = append(contents, &files.Content{
-			Source:      lintianPath,
-			Destination: filepath.Join("./usr/share/lintian/overrides", packageName),
-			Packager:    "deb",
-			FileInfo: &files.ContentFileInfo{
-				Mode: 0o644,
-			},
-		})
+		contents = append(contents, lintian)
 	}
 
 	log := log.WithField("package", packageName).WithField("format", format).WithField("arch", arch)
@@ -282,7 +248,7 @@ func create(ctx *context.Context, fpm config.NFPM, format string, binaries []*ar
 	if !fpm.Meta {
 		for _, binary := range binaries {
 			src := binary.Path
-			dst := filepath.Join(binDir, binary.Name)
+			dst := filepath.Join(fpm.Bindir, binary.Name)
 			log.WithField("src", src).WithField("dst", dst).Debug("adding binary to package")
 			contents = append(contents, &files.Content{
 				Source:      filepath.ToSlash(src),
@@ -307,13 +273,14 @@ func create(ctx *context.Context, fpm config.NFPM, format string, binaries []*ar
 		Release:         fpm.Release,
 		Prerelease:      fpm.Prerelease,
 		VersionMetadata: fpm.VersionMetadata,
-		Maintainer:      maintainer,
-		Description:     description,
+		Maintainer:      fpm.Maintainer,
+		Description:     fpm.Description,
 		Vendor:          fpm.Vendor,
-		Homepage:        homepage,
+		Homepage:        fpm.Homepage,
 		License:         fpm.License,
 		Changelog:       fpm.Changelog,
 		Overridables: nfpm.Overridables{
+			Umask:      overridden.Umask,
 			Conflicts:  overridden.Conflicts,
 			Depends:    overridden.Dependencies,
 			Recommends: overridden.Recommends,
@@ -454,6 +421,30 @@ func create(ctx *context.Context, fpm config.NFPM, format string, binaries []*ar
 		},
 	})
 	return nil
+}
+
+func setupLintian(ctx *context.Context, fpm config.NFPM, packageName, format, arch string) (*files.Content, error) {
+	lines := make([]string, 0, len(fpm.Deb.Lintian))
+	for _, ov := range fpm.Deb.Lintian {
+		lines = append(lines, fmt.Sprintf("%s: %s", packageName, ov))
+	}
+	lintianPath := filepath.Join(ctx.Config.Dist, format, packageName+"_"+arch, "lintian")
+	if err := os.MkdirAll(filepath.Dir(lintianPath), 0o755); err != nil {
+		return nil, fmt.Errorf("failed to write lintian file: %w", err)
+	}
+	if err := os.WriteFile(lintianPath, []byte(strings.Join(lines, "\n")), 0o644); err != nil {
+		return nil, fmt.Errorf("failed to write lintian file: %w", err)
+	}
+
+	log.Debugf("creating %q", lintianPath)
+	return &files.Content{
+		Source:      lintianPath,
+		Destination: filepath.Join("./usr/share/lintian/overrides", packageName),
+		Packager:    "deb",
+		FileInfo: &files.ContentFileInfo{
+			Mode: 0o644,
+		},
+	}, nil
 }
 
 func destinations(contents files.Contents) []string {

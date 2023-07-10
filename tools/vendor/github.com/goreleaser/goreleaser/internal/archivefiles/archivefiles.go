@@ -17,7 +17,7 @@ import (
 )
 
 // Eval evaluates the given list of files to their final form.
-func Eval(template *tmpl.Template, rlcp bool, files []config.File) ([]config.File, error) {
+func Eval(template *tmpl.Template, files []config.File) ([]config.File, error) {
 	var result []config.File
 	for _, f := range files {
 		glob, err := template.Apply(f.Source)
@@ -31,7 +31,11 @@ func Eval(template *tmpl.Template, rlcp bool, files []config.File) ([]config.Fil
 		}
 
 		if len(files) == 0 {
-			log.WithField("glob", f.Source).Warn("no files matched")
+			if !f.Default {
+				// only log if its not a default glob, as those are usually
+				// very generic and are not really warnings for the user.
+				log.WithField("glob", f.Source).Warn("no files matched")
+			}
 			continue
 		}
 
@@ -46,13 +50,13 @@ func Eval(template *tmpl.Template, rlcp bool, files []config.File) ([]config.Fil
 		}
 
 		for _, file := range files {
-			dst, err := destinationFor(f, prefix, file, rlcp)
+			dst, err := destinationFor(f, prefix, file)
 			if err != nil {
 				return nil, err
 			}
 			result = append(result, config.File{
-				Source:      file,
-				Destination: dst,
+				Source:      filepath.ToSlash(file),
+				Destination: filepath.ToSlash(dst),
 				Info:        f.Info,
 			})
 		}
@@ -66,20 +70,15 @@ func Eval(template *tmpl.Template, rlcp bool, files []config.File) ([]config.Fil
 }
 
 func tmplInfo(template *tmpl.Template, info *config.FileInfo) error {
-	var err error
-	info.Owner, err = template.Apply(info.Owner)
-	if err != nil {
-		return fmt.Errorf("failed to apply template %s: %w", info.Owner, err)
-	}
-	info.Group, err = template.Apply(info.Group)
-	if err != nil {
-		return fmt.Errorf("failed to apply template %s: %w", info.Group, err)
-	}
-	info.MTime, err = template.Apply(info.MTime)
-	if err != nil {
-		return fmt.Errorf("failed to apply template %s: %w", info.MTime, err)
+	if err := template.ApplyAll(
+		&info.Owner,
+		&info.Group,
+		&info.MTime,
+	); err != nil {
+		return err
 	}
 	if info.MTime != "" {
+		var err error
 		info.ParsedMTime, err = time.Parse(time.RFC3339Nano, info.MTime)
 		if err != nil {
 			return fmt.Errorf("failed to parse %s: %w", info.MTime, err)
@@ -109,12 +108,12 @@ func unique(in []config.File) []config.File {
 	return result
 }
 
-func destinationFor(f config.File, prefix, path string, rlcp bool) (string, error) {
+func destinationFor(f config.File, prefix, path string) (string, error) {
 	if f.StripParent {
 		return filepath.Join(f.Destination, filepath.Base(path)), nil
 	}
 
-	if rlcp && f.Destination != "" {
+	if f.Destination != "" {
 		relpath, err := filepath.Rel(prefix, path)
 		if err != nil {
 			// since prefix is a prefix of src a relative path should always be found

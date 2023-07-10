@@ -13,7 +13,6 @@ import (
 
 	"github.com/caarlos0/log"
 	"github.com/goreleaser/goreleaser/internal/artifact"
-	"github.com/goreleaser/goreleaser/internal/deprecate"
 	"github.com/goreleaser/goreleaser/internal/gio"
 	"github.com/goreleaser/goreleaser/internal/ids"
 	"github.com/goreleaser/goreleaser/internal/pipe"
@@ -38,16 +37,20 @@ var ErrNoSummary = errors.New("no summary provided for snapcraft")
 // Metadata to generate the snap package.
 type Metadata struct {
 	Name          string
+	Title         string `yaml:",omitempty"`
 	Version       string
 	Summary       string
 	Description   string
+	Icon          string `yaml:",omitempty"`
 	Base          string `yaml:",omitempty"`
 	License       string `yaml:",omitempty"`
 	Grade         string `yaml:",omitempty"`
 	Confinement   string `yaml:",omitempty"`
 	Architectures []string
+	Assumes       []string                  `yaml:",omitempty"`
 	Layout        map[string]LayoutMetadata `yaml:",omitempty"`
 	Apps          map[string]AppMetadata
+	Hooks         map[string]interface{} `yaml:",omitempty"`
 	Plugs         map[string]interface{} `yaml:",omitempty"`
 }
 
@@ -100,6 +103,7 @@ const defaultNameTemplate = `{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arc
 type Pipe struct{}
 
 func (Pipe) String() string                           { return "snapcraft packages" }
+func (Pipe) ContinueOnError() bool                    { return true }
 func (Pipe) Skip(ctx *context.Context) bool           { return len(ctx.Config.Snapcrafts) == 0 }
 func (Pipe) Dependencies(_ *context.Context) []string { return []string{"snapcraft"} }
 
@@ -132,9 +136,6 @@ func (Pipe) Default(ctx *context.Context) error {
 				snap.Builds = append(snap.Builds, b.ID)
 			}
 		}
-		if len(snap.Replacements) != 0 {
-			deprecate.Notice(ctx, "snapcrafts.replacements")
-		}
 		ids.Inc(snap.ID)
 	}
 	return ids.Validate()
@@ -153,16 +154,12 @@ func (Pipe) Run(ctx *context.Context) error {
 
 func doRun(ctx *context.Context, snap config.Snapcraft) error {
 	tpl := tmpl.New(ctx)
-	summary, err := tpl.Apply(snap.Summary)
-	if err != nil {
+	if err := tpl.ApplyAll(
+		&snap.Summary,
+		&snap.Description,
+	); err != nil {
 		return err
 	}
-	description, err := tpl.Apply(snap.Description)
-	if err != nil {
-		return err
-	}
-	snap.Summary = summary
-	snap.Description = description
 	if snap.Summary == "" && snap.Description == "" {
 		return pipe.Skip("no summary nor description were provided")
 	}
@@ -172,8 +169,7 @@ func doRun(ctx *context.Context, snap config.Snapcraft) error {
 	if snap.Description == "" {
 		return ErrNoDescription
 	}
-	_, err = exec.LookPath("snapcraft")
-	if err != nil {
+	if _, err := exec.LookPath("snapcraft"); err != nil {
 		return ErrNoSnapcraft
 	}
 
@@ -224,10 +220,7 @@ func (Pipe) Publish(ctx *context.Context) error {
 
 func create(ctx *context.Context, snap config.Snapcraft, arch string, binaries []*artifact.Artifact) error {
 	log := log.WithField("arch", arch)
-	// nolint:staticcheck
-	folder, err := tmpl.New(ctx).
-		WithArtifactReplacements(binaries[0], snap.Replacements).
-		Apply(snap.NameTemplate)
+	folder, err := tmpl.New(ctx).WithArtifact(binaries[0]).Apply(snap.NameTemplate)
 	if err != nil {
 		return err
 	}
@@ -274,6 +267,14 @@ func create(ctx *context.Context, snap config.Snapcraft, arch string, binaries [
 		Architectures: []string{arch},
 		Layout:        map[string]LayoutMetadata{},
 		Apps:          map[string]AppMetadata{},
+	}
+
+	if snap.Title != "" {
+		metadata.Title = snap.Title
+	}
+
+	if snap.Icon != "" {
+		metadata.Icon = snap.Icon
 	}
 
 	if snap.Base != "" {
@@ -384,6 +385,8 @@ func create(ctx *context.Context, snap config.Snapcraft, arch string, binaries [
 		}
 
 		metadata.Apps[name] = appMetadata
+		metadata.Assumes = snap.Assumes
+		metadata.Hooks = snap.Hooks
 		metadata.Plugs = snap.Plugs
 	}
 

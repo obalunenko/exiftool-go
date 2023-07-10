@@ -36,7 +36,7 @@ func getInstanceURL(ctx *context.Context) (string, error) {
 	u.Path = ""
 	rawurl := u.String()
 	if rawurl == "" {
-		return "", fmt.Errorf("invalid URL: %v", apiURL)
+		return "", fmt.Errorf("invalid URL: %q", ctx.Config.GiteaURLs.API)
 	}
 	return rawurl, nil
 }
@@ -142,6 +142,12 @@ func (c *giteaClient) CreateFile(
 			Email: commitAuthor.Email,
 		},
 	}
+
+	log.
+		WithField("repository", repo.String()).
+		WithField("name", repo.Name).
+		WithField("name", repo.Name).
+		Info("pushing")
 
 	currentFile, resp, err := c.client.GetContents(repo.Owner, repo.Name, branch, path)
 	// file not exist, create it
