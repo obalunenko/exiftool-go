@@ -18,10 +18,12 @@ var std = New(log.LstdFlags)
 // The prefix is followed by a colon only when Llongfile or Lshortfile
 // is specified.
 // For example, flags Ldate | Ltime (or LstdFlags) produce,
+//
 //	2009/01/23 01:23:23 message
+//
 // while flags Ldate | Ltime | Lmicroseconds | Llongfile produce,
+//
 //	2009/01/23 01:23:23.123123 /a/b/c/d.go:23: message
-//goland:noinspection GoUnusedConst
 const (
 	Ldate         = 1 << iota     // the date in the local time zone: 2009/01/23
 	Ltime                         // the time in the local time zone: 01:23:23
@@ -87,25 +89,21 @@ var Styles = map[Level]Style{
 }
 
 // SetLevelColor sets the Style of the given Level
-//goland:noinspection GoUnusedExportedFunction
 func SetLevelColor(level Level, color Style) {
 	Styles[level] = color
 }
 
-//Default returns the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
+// Default returns the default SimpleLogger
 func Default() *SimpleLogger {
 	return std
 }
 
-//SetDefault sets the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
+// SetDefault sets the default SimpleLogger
 func SetDefault(logger *SimpleLogger) {
 	std = logger
 }
 
 // New returns a newInt SimpleLogger implementation
-//goland:noinspection GoUnusedExportedFunction
 func New(flags int) *SimpleLogger {
 	return &SimpleLogger{
 		logger: log.New(os.Stderr, "", flags),
@@ -130,7 +128,7 @@ func (l *SimpleLogger) SetFlags(flags int) {
 	l.logger.SetFlags(flags)
 }
 
-func (l *SimpleLogger) Output(calldepth int, level Level, v ...interface{}) {
+func (l *SimpleLogger) Output(calldepth int, level Level, v ...any) {
 	if level < l.level {
 		return
 	}
@@ -145,200 +143,186 @@ func (l *SimpleLogger) Output(calldepth int, level Level, v ...interface{}) {
 
 	levelStr := level.String() + " "
 	textStyleStr := ""
+	endStyleStr := ""
 	if EnableColors {
 		levelStr = LevelStyle.And(Styles[level]).Apply(levelStr)
 		textStyleStr = TextStyle.String()
+		endStyleStr = StyleReset.String()
 	}
 	v[0] = levelStr
 	v[1] = textStyleStr
 
+	s := fmt.Sprint(v...) + endStyleStr
 	switch level {
 	case LevelFatal:
-		_ = l.logger.Output(calldepth, fmt.Sprint(v...))
+		_ = l.logger.Output(calldepth, s)
 		os.Exit(1)
 	case LevelPanic:
-		s := fmt.Sprint(v...)
 		_ = l.logger.Output(calldepth, s)
 		panic(s)
 	default:
-		_ = l.logger.Output(calldepth, fmt.Sprint(v...))
+		_ = l.logger.Output(calldepth, s)
 	}
 }
 
-func (l *SimpleLogger) Outputf(calldepth int, level Level, format string, v ...interface{}) {
+func (l *SimpleLogger) Outputf(calldepth int, level Level, format string, v ...any) {
 	l.Output(calldepth+1, level, fmt.Sprintf(format, v...))
 }
 
 // Trace logs on the LevelTrace
-func (l *SimpleLogger) Trace(v ...interface{}) {
+func (l *SimpleLogger) Trace(v ...any) {
 	l.Output(3, LevelTrace, v...)
 }
 
 // Tracef logs on the LevelTrace
-func (l *SimpleLogger) Tracef(format string, v ...interface{}) {
+func (l *SimpleLogger) Tracef(format string, v ...any) {
 	l.Outputf(3, LevelTrace, format, v...)
 }
 
 // Debug logs on the LevelDebug
-func (l *SimpleLogger) Debug(v ...interface{}) {
+func (l *SimpleLogger) Debug(v ...any) {
 	l.Output(3, LevelDebug, v...)
 }
 
 // Debugf logs on the LevelDebug
-func (l *SimpleLogger) Debugf(format string, v ...interface{}) {
+func (l *SimpleLogger) Debugf(format string, v ...any) {
 	l.Outputf(3, LevelDebug, format, v...)
 }
 
 // Info logs on the LevelInfo
-func (l *SimpleLogger) Info(v ...interface{}) {
+func (l *SimpleLogger) Info(v ...any) {
 	l.Output(3, LevelInfo, v...)
 }
 
 // Infof logs on the LevelInfo
-func (l *SimpleLogger) Infof(format string, v ...interface{}) {
+func (l *SimpleLogger) Infof(format string, v ...any) {
 	l.Outputf(3, LevelInfo, format, v...)
 }
 
 // Warn logs on the LevelWarn
-func (l *SimpleLogger) Warn(v ...interface{}) {
+func (l *SimpleLogger) Warn(v ...any) {
 	l.Output(3, LevelWarn, v...)
 }
 
 // Warnf logs on the LevelWarn
-func (l *SimpleLogger) Warnf(format string, v ...interface{}) {
+func (l *SimpleLogger) Warnf(format string, v ...any) {
 	l.Outputf(3, LevelWarn, format, v...)
 }
 
 // Error logs on the LevelError
-func (l *SimpleLogger) Error(v ...interface{}) {
+func (l *SimpleLogger) Error(v ...any) {
 	l.Output(3, LevelError, v...)
 }
 
 // Errorf logs on the LevelError
-func (l *SimpleLogger) Errorf(format string, v ...interface{}) {
+func (l *SimpleLogger) Errorf(format string, v ...any) {
 	l.Outputf(3, LevelError, format, v...)
 }
 
 // Fatal logs on the LevelFatal
-func (l *SimpleLogger) Fatal(v ...interface{}) {
+func (l *SimpleLogger) Fatal(v ...any) {
 	l.Output(3, LevelFatal, v...)
 }
 
 // Fatalf logs on the LevelFatal
-func (l *SimpleLogger) Fatalf(format string, v ...interface{}) {
+func (l *SimpleLogger) Fatalf(format string, v ...any) {
 	l.Outputf(3, LevelFatal, format, v...)
 }
 
 // Panic logs on the LevelPanic
-func (l *SimpleLogger) Panic(v ...interface{}) {
+func (l *SimpleLogger) Panic(v ...any) {
 	l.Output(3, LevelPanic, v...)
 }
 
 // Panicf logs on the LevelPanic
-func (l *SimpleLogger) Panicf(format string, v ...interface{}) {
+func (l *SimpleLogger) Panicf(format string, v ...any) {
 	l.Outputf(3, LevelPanic, format, v...)
 }
 
 // SetLevel sets the Level of the default Logger
-//goland:noinspection GoUnusedExportedFunction
 func SetLevel(level Level) {
 	Default().SetLevel(level)
 }
 
 // SetFlags sets the Output flags like: Ldate, Ltime, Lmicroseconds, Llongfile, Lshortfile, LUTC, Lmsgprefix,LstdFlags of the default Logger
-//goland:noinspection GoUnusedExportedFunction
 func SetFlags(flags int) {
 	Default().SetFlags(flags)
 }
 
 // Trace logs on the LevelTrace with the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
-func Trace(v ...interface{}) {
+func Trace(v ...any) {
 	Output(3, LevelTrace, v...)
 }
 
 // Tracef logs on the LevelTrace with the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
-func Tracef(format string, v ...interface{}) {
+func Tracef(format string, v ...any) {
 	Outputf(3, LevelTrace, format, v...)
 }
 
 // Debug logs on the LevelDebug with the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
-func Debug(v ...interface{}) {
+func Debug(v ...any) {
 	Output(3, LevelDebug, v...)
 }
 
 // Debugf logs on the LevelDebug with the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
-func Debugf(format string, v ...interface{}) {
+func Debugf(format string, v ...any) {
 	Outputf(3, LevelDebug, format, v...)
 }
 
 // Info logs on the LevelInfo with the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
-func Info(v ...interface{}) {
+func Info(v ...any) {
 	Output(3, LevelInfo, v...)
 }
 
 // Infof logs on the LevelInfo with the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
-func Infof(format string, v ...interface{}) {
+func Infof(format string, v ...any) {
 	Outputf(3, LevelInfo, format, v...)
 }
 
 // Warn logs on the LevelWarn with the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
-func Warn(v ...interface{}) {
+func Warn(v ...any) {
 	Output(3, LevelWarn, v...)
 }
 
 // Warnf logs on the Level with the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
-func Warnf(format string, v ...interface{}) {
+func Warnf(format string, v ...any) {
 	Outputf(3, LevelWarn, format, v...)
 }
 
 // Error logs on the LevelError with the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
-func Error(v ...interface{}) {
+func Error(v ...any) {
 	Output(3, LevelError, v...)
 }
 
 // Errorf logs on the LevelError with the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
-func Errorf(format string, v ...interface{}) {
+func Errorf(format string, v ...any) {
 	Outputf(3, LevelError, format, v...)
 }
 
 // Fatal logs on the LevelFatal with the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
-func Fatal(v ...interface{}) {
+func Fatal(v ...any) {
 	Output(3, LevelFatal, v...)
 }
 
 // Fatalf logs on the LevelFatal with the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
-func Fatalf(format string, v ...interface{}) {
+func Fatalf(format string, v ...any) {
 	Outputf(3, LevelFatal, format, v...)
 }
 
 // Panic logs on the LevelPanic with the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
-func Panic(v ...interface{}) {
+func Panic(v ...any) {
 	Output(3, LevelPanic, v...)
 }
 
 // Panicf logs on the LevelPanic with the default SimpleLogger
-//goland:noinspection GoUnusedExportedFunction
-func Panicf(format string, v ...interface{}) {
+func Panicf(format string, v ...any) {
 	Outputf(3, LevelPanic, format, v...)
 }
 
-func Output(calldepth int, level Level, v ...interface{}) {
+func Output(calldepth int, level Level, v ...any) {
 	std.Output(calldepth+1, level, v...)
 }
 
-func Outputf(calldepth int, level Level, format string, v ...interface{}) {
+func Outputf(calldepth int, level Level, format string, v ...any) {
 	std.Outputf(calldepth+1, level, format, v...)
 }

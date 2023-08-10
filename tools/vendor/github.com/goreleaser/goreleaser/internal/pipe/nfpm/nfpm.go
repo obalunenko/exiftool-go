@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"dario.cat/mergo"
 	"github.com/caarlos0/log"
 	"github.com/goreleaser/goreleaser/internal/artifact"
 	"github.com/goreleaser/goreleaser/internal/deprecate"
@@ -20,7 +21,6 @@ import (
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/deprecation"
 	"github.com/goreleaser/nfpm/v2/files"
-	"github.com/imdario/mergo"
 
 	_ "github.com/goreleaser/nfpm/v2/apk"  // blank import to register the format
 	_ "github.com/goreleaser/nfpm/v2/arch" // blank import to register the format
@@ -188,6 +188,10 @@ func create(ctx *context.Context, fpm config.NFPM, format string, binaries []*ar
 		&fpm.Homepage,
 		&fpm.Description,
 		&fpm.Maintainer,
+		&overridden.Scripts.PostInstall,
+		&overridden.Scripts.PreInstall,
+		&overridden.Scripts.PostRemove,
+		&overridden.Scripts.PreRemove,
 	); err != nil {
 		return err
 	}
@@ -322,6 +326,8 @@ func create(ctx *context.Context, fpm config.NFPM, format string, binaries []*ar
 				Summary:     overridden.RPM.Summary,
 				Group:       overridden.RPM.Group,
 				Compression: overridden.RPM.Compression,
+				Prefixes:    overridden.RPM.Prefixes,
+				Packager:    overridden.RPM.Packager,
 				Signature: nfpm.RPMSignature{
 					PackageSignature: nfpm.PackageSignature{
 						KeyFile:       rpmKeyFile,
@@ -413,7 +419,6 @@ func create(ctx *context.Context, fpm config.NFPM, format string, binaries []*ar
 		Gomips:  binaries[0].Gomips,
 		Goamd64: binaries[0].Goamd64,
 		Extra: map[string]interface{}{
-			artifact.ExtraBuilds: binaries,
 			artifact.ExtraID:     fpm.ID,
 			artifact.ExtraFormat: format,
 			artifact.ExtraExt:    format,
@@ -439,7 +444,7 @@ func setupLintian(ctx *context.Context, fpm config.NFPM, packageName, format, ar
 	log.Debugf("creating %q", lintianPath)
 	return &files.Content{
 		Source:      lintianPath,
-		Destination: filepath.Join("./usr/share/lintian/overrides", packageName),
+		Destination: "./usr/share/lintian/overrides/" + packageName,
 		Packager:    "deb",
 		FileInfo: &files.ContentFileInfo{
 			Mode: 0o644,
