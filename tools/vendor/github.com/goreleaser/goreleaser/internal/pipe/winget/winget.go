@@ -224,7 +224,8 @@ func (p Pipe) doRun(ctx *context.Context, winget config.Winget, cl client.Releas
 		folder := artifact.ExtraOr(*archive, artifact.ExtraWrappedIn, ".")
 		for _, bin := range artifact.ExtraOr(*archive, artifact.ExtraBinaries, []string{}) {
 			files = append(files, InstallerItemFile{
-				RelativeFilePath: windowsJoin([2]string{folder, bin}),
+				RelativeFilePath:     strings.ReplaceAll(filepath.Join(folder, bin), "/", "\\"),
+				PortableCommandAlias: strings.TrimSuffix(filepath.Base(bin), ".exe"),
 			})
 		}
 		url, err := tmpl.New(ctx).WithArtifact(archive).Apply(winget.URLTemplate)
@@ -334,8 +335,9 @@ func doPublish(ctx *context.Context, cl client.Client, wingets []*artifact.Artif
 			return err
 		}
 		files = append(files, client.RepoFile{
-			Content: content,
-			Path:    filepath.Join(winget.Path, pkg.Name),
+			Content:    content,
+			Path:       filepath.Join(winget.Path, pkg.Name),
+			Identifier: repoFileID(pkg.Type),
 		})
 	}
 
@@ -350,7 +352,14 @@ func doPublish(ctx *context.Context, cl client.Client, wingets []*artifact.Artif
 	}
 
 	for _, file := range files {
-		if err := cl.CreateFile(ctx, author, repo, file.Content, file.Path, msg); err != nil {
+		if err := cl.CreateFile(
+			ctx,
+			author,
+			repo,
+			file.Content,
+			file.Path,
+			msg+": add "+file.Identifier,
+		); err != nil {
 			return err
 		}
 	}
@@ -398,9 +407,16 @@ func extFor(tp artifact.Type) string {
 	}
 }
 
-func windowsJoin(elem [2]string) string {
-	if elem[0] == "" {
-		return elem[1]
+func repoFileID(tp artifact.Type) string {
+	switch tp {
+	case artifact.WingetVersion:
+		return "version"
+	case artifact.WingetInstaller:
+		return "installer"
+	case artifact.WingetDefaultLocale:
+		return "locale"
+	default:
+		// should never happen
+		return ""
 	}
-	return elem[0] + "\\" + elem[1]
 }

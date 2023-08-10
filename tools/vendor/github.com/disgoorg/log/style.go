@@ -6,8 +6,7 @@ import (
 	"strconv"
 )
 
-// general Style(s)
-//goland:noinspection GoUnusedGlobalVariable
+// general Style(s)any
 var (
 	StyleReset       = newInt(0)
 	StyleBold        = newInt(1)
@@ -23,7 +22,6 @@ var (
 )
 
 // AlternateFont returns a Style which alternates the font
-//goland:noinspection GoUnusedExportedFunction
 func AlternateFont(font int) Style {
 	if font < 1 || font > 9 {
 		panic("font can't be smaller than 1 and bigger than 9")
@@ -31,8 +29,7 @@ func AlternateFont(font int) Style {
 	return newInt(font + 10)
 }
 
-// more general Style(s)
-//goland:noinspection GoUnusedGlobalVariable
+// more general Style(s)any
 var (
 	StyleBlackLetterFont             = newInt(20)
 	StyleDoubleUnderlined            = newInt(21)
@@ -46,8 +43,7 @@ var (
 	StyleNotCrossedOut               = newInt(29)
 )
 
-// foreground color Style(s)
-//goland:noinspection GoUnusedGlobalVariable
+// foreground color Style(s)any
 var (
 	ForegroundColorBlack   = newInt(30)
 	ForegroundColorRed     = newInt(31)
@@ -60,13 +56,11 @@ var (
 )
 
 // SetForegroundColor returns a Style which sets the foreground color
-//goland:noinspection GoUnusedExportedFunction
 func SetForegroundColor(r, g, b int) Style {
 	return colorStyle(38, r, g, b)
 }
 
-// background color Style(s)
-//goland:noinspection GoUnusedGlobalVariable
+// background color Style(s)any
 var (
 	DefaultForegroundColor = newInt(39)
 	BackgroundColorBlack   = newInt(40)
@@ -80,13 +74,11 @@ var (
 )
 
 // SetBackgroundColor returns a Style which sets the background color
-//goland:noinspection GoUnusedExportedFunction
 func SetBackgroundColor(r, g, b int) Style {
 	return colorStyle(48, r, g, b)
 }
 
-// more general Style(s)
-//goland:noinspection GoUnusedGlobalVariable
+// more general Style(s)any
 var (
 	DefaultBackgroundColor          = newInt(49)
 	StyleDisableProportionalSpacing = newInt(50)
@@ -98,13 +90,11 @@ var (
 )
 
 // SetUnderlineColor returns a Style which sets the underline color
-//goland:noinspection GoUnusedExportedFunction
 func SetUnderlineColor(r, g, b int) Style {
 	return colorStyle(58, r, g, b)
 }
 
-// more general Style(s)
-//goland:noinspection GoUnusedGlobalVariable
+// more general Style(s)any
 var (
 	StyleDefaultUnderlineColor                           = newInt(59)
 	StyleIdeogramUnderlineOrRightSideLine                = newInt(60)
@@ -115,16 +105,14 @@ var (
 	StyleNoIdeogramAttributes                            = newInt(65)
 )
 
-// super/subscript Style(s)
-//goland:noinspection GoUnusedGlobalVariable
+// super/subscript Style(s)any
 var (
 	StyleSuperscript                    = newInt(73)
 	StyleSubscript                      = newInt(74)
 	StyleNeitherSuperscriptNorSubscript = newInt(75)
 )
 
-// foreground bright color Style(s)
-//goland:noinspection GoUnusedGlobalVariable
+// foreground bright color Style(s)any
 var (
 	ForegroundColorBrightBlack   = newInt(90)
 	ForegroundColorBrightRed     = newInt(91)
@@ -136,8 +124,7 @@ var (
 	ForegroundColorBrightWhite   = newInt(97)
 )
 
-// background bright color Style(s)
-//goland:noinspection GoUnusedGlobalVariable
+// background bright color Style(s)any
 var (
 	BackgroundColorBrightBlack   = newInt(100)
 	BackgroundColorBrightRed     = newInt(101)
@@ -185,7 +172,6 @@ func (s Style) ApplyClear(text string) string {
 }
 
 // ApplyStyles wraps a given message in the given Style(s).
-//goland:noinspection GoUnusedExportedFunction
 func ApplyStyles(message string, colors ...Style) string {
 	for _, color := range colors {
 		message = color.Apply(message)

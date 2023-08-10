@@ -157,6 +157,7 @@ func process(ctx *context.Context, docker config.Docker, artifacts []*artifact.A
 	if err != nil {
 		return fmt.Errorf("failed to create temporary dir: %w", err)
 	}
+	defer os.RemoveAll(tmp)
 
 	images, err := processImageTemplates(ctx, docker)
 	if err != nil {
@@ -170,11 +171,15 @@ func process(ctx *context.Context, docker config.Docker, artifacts []*artifact.A
 	log := log.WithField("image", images[0])
 	log.Debug("tempdir: " + tmp)
 
-	dockerfile, err := tmpl.New(ctx).Apply(docker.Dockerfile)
-	if err != nil {
+	if err := tmpl.New(ctx).ApplyAll(
+		&docker.Dockerfile,
+	); err != nil {
 		return err
 	}
-	if err := gio.Copy(dockerfile, filepath.Join(tmp, "Dockerfile")); err != nil {
+	if err := gio.Copy(
+		docker.Dockerfile,
+		filepath.Join(tmp, "Dockerfile"),
+	); err != nil {
 		return fmt.Errorf("failed to copy dockerfile: %w", err)
 	}
 
@@ -187,7 +192,12 @@ func process(ctx *context.Context, docker config.Docker, artifacts []*artifact.A
 		}
 	}
 	for _, art := range artifacts {
-		if err := gio.Copy(art.Path, filepath.Join(tmp, filepath.Base(art.Path))); err != nil {
+		target := filepath.Join(tmp, art.Name)
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			return fmt.Errorf("failed to make dir for artifact: %w", err)
+		}
+
+		if err := gio.Copy(art.Path, target); err != nil {
 			return fmt.Errorf("failed to copy artifact: %w", err)
 		}
 	}
@@ -243,7 +253,7 @@ func isFileNotFoundError(out string) bool {
 		return false
 	}
 	return strings.Contains(out, "file not found") ||
-		strings.Contains(out, "not found: not found")
+		strings.Contains(out, ": not found")
 }
 
 func processImageTemplates(ctx *context.Context, docker config.Docker) ([]string, error) {

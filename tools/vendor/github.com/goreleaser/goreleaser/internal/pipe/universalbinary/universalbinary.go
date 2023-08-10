@@ -11,6 +11,7 @@ import (
 	"github.com/caarlos0/go-shellwords"
 	"github.com/caarlos0/log"
 	"github.com/goreleaser/goreleaser/internal/artifact"
+	"github.com/goreleaser/goreleaser/internal/gio"
 	"github.com/goreleaser/goreleaser/internal/ids"
 	"github.com/goreleaser/goreleaser/internal/pipe"
 	"github.com/goreleaser/goreleaser/internal/semerrgroup"
@@ -134,10 +135,13 @@ const (
 
 // heavily based on https://github.com/randall77/makefat
 func makeUniversalBinary(ctx *context.Context, opts *build.Options, unibin config.UniversalBinary) error {
-	name, err := tmpl.New(ctx).Apply(unibin.NameTemplate)
-	if err != nil {
+	if err := tmpl.New(ctx).ApplyAll(
+		&unibin.NameTemplate,
+		&unibin.ModTimestamp,
+	); err != nil {
 		return err
 	}
+	name := unibin.NameTemplate
 	opts.Name = name
 
 	path := filepath.Join(ctx.Config.Dist, unibin.ID+"_darwin_all", name)
@@ -219,6 +223,10 @@ func makeUniversalBinary(ctx *context.Context, opts *build.Options, unibin confi
 
 	if err := out.Close(); err != nil {
 		return fmt.Errorf("failed to close file: %w", err)
+	}
+
+	if err := gio.Chtimes(path, unibin.ModTimestamp); err != nil {
+		return err
 	}
 
 	extra := map[string]interface{}{}
