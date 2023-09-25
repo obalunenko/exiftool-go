@@ -204,30 +204,32 @@ func (t *Template) Apply(s string) (string, error) {
 			"time": func(s string) string {
 				return time.Now().UTC().Format(s)
 			},
-			"tolower":       strings.ToLower,
-			"toupper":       strings.ToUpper,
-			"trim":          strings.TrimSpace,
-			"trimprefix":    strings.TrimPrefix,
-			"trimsuffix":    strings.TrimSuffix,
-			"title":         cases.Title(language.English).String,
-			"dir":           filepath.Dir,
-			"base":          filepath.Base,
-			"abs":           filepath.Abs,
-			"incmajor":      incMajor,
-			"incminor":      incMinor,
-			"incpatch":      incPatch,
-			"filter":        filter(false),
-			"reverseFilter": filter(true),
-			"mdv2escape":    mdv2Escape,
-			"envOrDefault":  t.envOrDefault,
+			"tolower":        strings.ToLower,
+			"toupper":        strings.ToUpper,
+			"trim":           strings.TrimSpace,
+			"trimprefix":     strings.TrimPrefix,
+			"trimsuffix":     strings.TrimSuffix,
+			"title":          cases.Title(language.English).String,
+			"dir":            filepath.Dir,
+			"base":           filepath.Base,
+			"abs":            filepath.Abs,
+			"incmajor":       incMajor,
+			"incminor":       incMinor,
+			"incpatch":       incPatch,
+			"filter":         filter(false),
+			"reverseFilter":  filter(true),
+			"mdv2escape":     mdv2Escape,
+			"envOrDefault":   t.envOrDefault,
+			"map":            makemap,
+			"indexOrDefault": indexOrDefault,
 		}).
 		Parse(s)
 	if err != nil {
-		return "", err
+		return "", newTmplError(s, err)
 	}
 
 	err = tmpl.Execute(&out, t.fields)
-	return out.String(), err
+	return out.String(), newTmplError(s, err)
 }
 
 // ApplyAll applies all the given strings against the Fields stored in the
@@ -237,7 +239,7 @@ func (t *Template) ApplyAll(sps ...*string) error {
 		s := *sp
 		result, err := t.Apply(s)
 		if err != nil {
-			return fmt.Errorf("failed to apply template: %s: %w", s, err)
+			return newTmplError(s, err)
 		}
 		*sp = result
 	}
@@ -345,4 +347,23 @@ func mdv2Escape(s string) string {
 		".", "\\.",
 		"!", "\\!",
 	).Replace(s)
+}
+
+func makemap(kvs ...string) (map[string]string, error) {
+	if len(kvs)%2 != 0 {
+		return nil, fmt.Errorf("map expects even number of arguments, got %d", len(kvs))
+	}
+	m := make(map[string]string)
+	for i := 0; i < len(kvs); i += 2 {
+		m[kvs[i]] = kvs[i+1]
+	}
+	return m, nil
+}
+
+func indexOrDefault(m map[string]string, name, value string) string {
+	s, ok := m[name]
+	if ok {
+		return s
+	}
+	return value
 }

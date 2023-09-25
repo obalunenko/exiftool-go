@@ -3,10 +3,12 @@ package docker
 import (
 	"fmt"
 	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/caarlos0/log"
 	"github.com/goreleaser/goreleaser/internal/artifact"
@@ -14,6 +16,7 @@ import (
 	"github.com/goreleaser/goreleaser/internal/ids"
 	"github.com/goreleaser/goreleaser/internal/pipe"
 	"github.com/goreleaser/goreleaser/internal/semerrgroup"
+	"github.com/goreleaser/goreleaser/internal/skips"
 	"github.com/goreleaser/goreleaser/internal/tmpl"
 	"github.com/goreleaser/goreleaser/pkg/config"
 	"github.com/goreleaser/goreleaser/pkg/context"
@@ -29,8 +32,11 @@ const (
 // Pipe for docker.
 type Pipe struct{}
 
-func (Pipe) String() string                 { return "docker images" }
-func (Pipe) Skip(ctx *context.Context) bool { return len(ctx.Config.Dockers) == 0 || ctx.SkipDocker }
+func (Pipe) String() string { return "docker images" }
+
+func (Pipe) Skip(ctx *context.Context) bool {
+	return len(ctx.Config.Dockers) == 0 || skips.Any(ctx, skips.Docker)
+}
 
 func (Pipe) Dependencies(ctx *context.Context) []string {
 	var cmds []string
@@ -151,7 +157,7 @@ func (Pipe) Run(ctx *context.Context) error {
 
 func process(ctx *context.Context, docker config.Docker, artifacts []*artifact.Artifact) error {
 	if len(artifacts) == 0 {
-		log.Warn("not binaries or packages found for the given platform - COPY/ADD may not work")
+		log.Warn("no binaries or packages found for the given platform - COPY/ADD may not work")
 	}
 	tmp, err := os.MkdirTemp("", "goreleaserdocker")
 	if err != nil {
@@ -306,7 +312,7 @@ func dockerPush(ctx *context.Context, image *artifact.Artifact) error {
 		return pipe.Skip("prerelease detected with 'auto' push, skipping docker publish: " + image.Name)
 	}
 
-	digest, err := imagers[docker.Use].Push(ctx, image.Name, docker.PushFlags)
+	digest, err := doPush(ctx, imagers[docker.Use], image.Name, docker.PushFlags)
 	if err != nil {
 		return err
 	}
@@ -327,4 +333,53 @@ func dockerPush(ctx *context.Context, image *artifact.Artifact) error {
 
 	ctx.Artifacts.Add(art)
 	return nil
+}
+
+func doPush(ctx *context.Context, img imager, name string, flags []string) (string, error) {
+	var try int
+	for try < 10 {
+		digest, err := img.Push(ctx, name, flags)
+		if err == nil {
+			return digest, nil
+		}
+		if isRetryable(err) {
+			log.WithField("try", try).
+				WithField("image", name).
+				WithError(err).
+				Warnf("failed to push image, will retry")
+			time.Sleep(time.Duration(try*10) * time.Second)
+			try++
+			continue
+		}
+		return "", fmt.Errorf("failed to push %s after %d tries: %w", name, try, err)
+	}
+	return "", nil // will never happen
+}
+
+func isRetryable(err error) bool {
+	for _, code := range []int{
+		http.StatusInternalServerError,
+		// http.StatusNotImplemented,
+		http.StatusBadGateway,
+		http.StatusServiceUnavailable,
+		http.StatusGatewayTimeout,
+		// http.StatusHTTPVersionNotSupported,
+		http.StatusVariantAlsoNegotiates,
+		// http.StatusInsufficientStorage,
+		// http.StatusLoopDetected,
+		http.StatusNotExtended,
+		// http.StatusNetworkAuthenticationRequired,
+	} {
+		if strings.Contains(
+			err.Error(),
+			fmt.Sprintf(
+				"received unexpected HTTP status: %d %s",
+				code,
+				http.StatusText(code),
+			),
+		) {
+			return true
+		}
+	}
+	return false
 }

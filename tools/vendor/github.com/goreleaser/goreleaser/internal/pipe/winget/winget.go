@@ -27,7 +27,9 @@ var (
 	errSkipUpload               = pipe.Skip("winget.skip_upload is set")
 	errSkipUploadAuto           = pipe.Skip("winget.skip_upload is set to 'auto', and current version is a pre-release")
 	errMultipleArchives         = pipe.Skip("found multiple archives for the same platform, please consider filtering by id")
-	packageIdentifierValid      = regexp.MustCompile("^[^\\.\\s\\\\/:\\*\\?\"<>\\|\\x01-\\x1f]{1,32}(\\.[^\\.\\s\\\\/:\\*\\?\"<>\\|\\x01-\\x1f]{1,32}){1,7}$")
+
+	// copied from winget src
+	packageIdentifierValid = regexp.MustCompile("^[^\\.\\s\\\\/:\\*\\?\"<>\\|\\x01-\\x1f]{1,32}(\\.[^\\.\\s\\\\/:\\*\\?\"<>\\|\\x01-\\x1f]{1,32}){1,7}$")
 )
 
 type errNoArchivesFound struct {
@@ -70,7 +72,7 @@ func (Pipe) Default(ctx *context.Context) error {
 }
 
 func (p Pipe) Run(ctx *context.Context) error {
-	cli, err := client.New(ctx)
+	cli, err := client.NewReleaseClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -87,7 +89,7 @@ func (p Pipe) Publish(ctx *context.Context) error {
 	return p.publishAll(ctx, cli)
 }
 
-func (p Pipe) runAll(ctx *context.Context, cli client.Client) error {
+func (p Pipe) runAll(ctx *context.Context, cli client.ReleaseURLTemplater) error {
 	for _, winget := range ctx.Config.Winget {
 		err := p.doRun(ctx, winget, cli)
 		if err != nil {
@@ -97,7 +99,7 @@ func (p Pipe) runAll(ctx *context.Context, cli client.Client) error {
 	return nil
 }
 
-func (p Pipe) doRun(ctx *context.Context, winget config.Winget, cl client.ReleaserURLTemplater) error {
+func (p Pipe) doRun(ctx *context.Context, winget config.Winget, cl client.ReleaseURLTemplater) error {
 	if winget.Repository.Name == "" {
 		return errNoRepoName
 	}
@@ -202,6 +204,17 @@ func (p Pipe) doRun(ctx *context.Context, winget config.Winget, cl client.Releas
 		return err
 	}
 
+	var deps []PackageDependency
+	for _, dep := range winget.Dependencies {
+		if err := tp.ApplyAll(&dep.MinimumVersion, &dep.PackageIdentifier); err != nil {
+			return err
+		}
+		deps = append(deps, PackageDependency{
+			PackageIdentifier: dep.PackageIdentifier,
+			MinimumVersion:    dep.MinimumVersion,
+		})
+	}
+
 	installer := Installer{
 		PackageIdentifier: winget.PackageIdentifier,
 		PackageVersion:    ctx.Version,
@@ -212,6 +225,9 @@ func (p Pipe) doRun(ctx *context.Context, winget config.Winget, cl client.Releas
 		Installers:        []InstallerItem{},
 		ManifestType:      "installer",
 		ManifestVersion:   manifestVersion,
+		Dependencies: Dependencies{
+			PackageDependencies: deps,
+		},
 	}
 
 	var amd64Count, i386count int
