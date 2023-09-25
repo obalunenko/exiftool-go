@@ -11,11 +11,11 @@ import (
 	"strings"
 	"sync"
 
+	"dario.cat/mergo"
 	"github.com/AlekSi/pointer"
 	"github.com/Masterminds/semver/v3"
 	"github.com/goreleaser/chglog"
 	"github.com/goreleaser/nfpm/v2/files"
-	"github.com/imdario/mergo"
 	"gopkg.in/yaml.v3"
 )
 
@@ -235,6 +235,7 @@ func (c *Config) expandEnvVars() {
 	for k, v := range c.Info.Deb.Fields {
 		c.Info.Deb.Fields[k] = os.Expand(v, c.envMappingFunc)
 	}
+	c.Info.Deb.Predepends = c.expandEnvVarsStringSlice(c.Info.Deb.Predepends)
 }
 
 // Info contains information about a single package.
@@ -351,6 +352,13 @@ type PackageSignature struct {
 	KeyFile       string  `yaml:"key_file,omitempty" json:"key_file,omitempty" jsonschema:"title=key file,example=key.gpg"`
 	KeyID         *string `yaml:"key_id,omitempty" json:"key_id,omitempty" jsonschema:"title=key id,example=bc8acdd415bd80b3"`
 	KeyPassphrase string  `yaml:"-" json:"-"` // populated from environment variable
+	// SignFn, if set, will be called with the package-specific data to sign.
+	// For deb and rpm packages, data is the full package content.
+	// For apk packages, data is the SHA1 digest of control tgz.
+	//
+	// This allows for signing implementations other than using a local file
+	// (for example using a remote signer like KMS).
+	SignFn func(data io.Reader) ([]byte, error) `yaml:"-" json:"-"` // populated when used as a library
 }
 
 type RPMSignature struct {
@@ -383,6 +391,7 @@ type Deb struct {
 	Signature   DebSignature      `yaml:"signature,omitempty" json:"signature,omitempty" jsonschema:"title=signature"`
 	Compression string            `yaml:"compression,omitempty" json:"compression,omitempty" jsonschema:"title=compression algorithm to be used,enum=gzip,enum=xz,enum=none,default=gzip"`
 	Fields      map[string]string `yaml:"fields,omitempty" json:"fields,omitempty" jsonschema:"title=fields"`
+	Predepends  []string          `yaml:"predepends,omitempty" json:"predepends,omitempty" jsonschema:"title=predepends directive,example=nfpm"`
 }
 
 type DebSignature struct {

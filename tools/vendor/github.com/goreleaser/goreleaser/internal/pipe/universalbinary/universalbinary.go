@@ -16,6 +16,7 @@ import (
 	"github.com/goreleaser/goreleaser/internal/pipe"
 	"github.com/goreleaser/goreleaser/internal/semerrgroup"
 	"github.com/goreleaser/goreleaser/internal/shell"
+	"github.com/goreleaser/goreleaser/internal/skips"
 	"github.com/goreleaser/goreleaser/internal/tmpl"
 	"github.com/goreleaser/goreleaser/pkg/build"
 	"github.com/goreleaser/goreleaser/pkg/config"
@@ -58,14 +59,18 @@ func (Pipe) Run(ctx *context.Context) error {
 				Goos:   "darwin",
 				Goarch: "all",
 			}
-			if err := runHook(ctx, &opts, unibin.Hooks.Pre); err != nil {
-				return fmt.Errorf("pre hook failed: %w", err)
+			if !skips.Any(ctx, skips.PreBuildHooks) {
+				if err := runHook(ctx, &opts, unibin.Hooks.Pre); err != nil {
+					return fmt.Errorf("pre hook failed: %w", err)
+				}
 			}
 			if err := makeUniversalBinary(ctx, &opts, unibin); err != nil {
 				return err
 			}
-			if err := runHook(ctx, &opts, unibin.Hooks.Post); err != nil {
-				return fmt.Errorf("post hook failed: %w", err)
+			if !skips.Any(ctx, skips.PostBuildHooks) {
+				if err := runHook(ctx, &opts, unibin.Hooks.Post); err != nil {
+					return fmt.Errorf("post hook failed: %w", err)
+				}
 			}
 			if !unibin.Replace {
 				return nil

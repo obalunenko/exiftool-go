@@ -69,12 +69,14 @@ var archToRPM = map[string]string{
 	// TODO: other arches
 }
 
-func ensureValidArch(info *nfpm.Info) *nfpm.Info {
+func setDefaults(info *nfpm.Info) *nfpm.Info {
 	if info.RPM.Arch != "" {
 		info.Arch = info.RPM.Arch
 	} else if arch, ok := archToRPM[info.Arch]; ok {
 		info.Arch = arch
 	}
+
+	info.Release = defaultTo(info.Release, "1")
 
 	return info
 }
@@ -83,15 +85,16 @@ func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 // to the conventions for RPM packages. See:
 // http://ftp.rpm.org/max-rpm/ch-rpm-file-format.html
 func (*RPM) ConventionalFileName(info *nfpm.Info) string {
-	info = ensureValidArch(info)
-
-	version := formatVersion(info)
-	if info.Release != "" {
-		version += "-" + info.Release
-	}
+	info = setDefaults(info)
 
 	// name-version-release.architecture.rpm
-	return fmt.Sprintf("%s-%s.%s.rpm", info.Name, version, info.Arch)
+	return fmt.Sprintf(
+		"%s-%s-%s.%s.rpm",
+		info.Name,
+		formatVersion(info),
+		defaultTo(info.Release, "1"),
+		info.Arch,
+	)
 }
 
 // ConventionalExtension returns the file name conventionally used for RPM packages
@@ -105,7 +108,7 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
 		meta *rpmpack.RPMMetaData
 		rpm  *rpmpack.RPM
 	)
-	info = ensureValidArch(info)
+	info = setDefaults(info)
 
 	err = nfpm.PrepareForPackager(info, packagerName)
 	if err != nil {
@@ -125,6 +128,11 @@ func (*RPM) Package(info *nfpm.Info, w io.Writer) (err error) {
 			info.RPM.Signature.KeyPassphrase,
 			info.RPM.Signature.KeyID,
 		))
+	}
+	if signFn := info.RPM.Signature.SignFn; signFn != nil {
+		rpm.SetPGPSigner(func(data []byte) ([]byte, error) {
+			return signFn(bytes.NewReader(data))
+		})
 	}
 
 	if err = createFilesInsideRPM(info, rpm); err != nil {

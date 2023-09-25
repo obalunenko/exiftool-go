@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iancoleman/orderedmap"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 // Version is the JSON Schema version.
@@ -48,10 +48,10 @@ type Schema struct {
 	Items       *Schema   `json:"items,omitempty"`       // section 10.3.1.2  (replaces additionalItems)
 	Contains    *Schema   `json:"contains,omitempty"`    // section 10.3.1.3
 	// RFC draft-bhutton-json-schema-00 section 10.3.2 (sub-schemas)
-	Properties           *orderedmap.OrderedMap `json:"properties,omitempty"`           // section 10.3.2.1
-	PatternProperties    map[string]*Schema     `json:"patternProperties,omitempty"`    // section 10.3.2.2
-	AdditionalProperties *Schema                `json:"additionalProperties,omitempty"` // section 10.3.2.3
-	PropertyNames        *Schema                `json:"propertyNames,omitempty"`        // section 10.3.2.4
+	Properties           *orderedmap.OrderedMap[string, *Schema] `json:"properties,omitempty"`           // section 10.3.2.1
+	PatternProperties    map[string]*Schema                      `json:"patternProperties,omitempty"`    // section 10.3.2.2
+	AdditionalProperties *Schema                                 `json:"additionalProperties,omitempty"` // section 10.3.2.3
+	PropertyNames        *Schema                                 `json:"propertyNames,omitempty"`        // section 10.3.2.4
 	// RFC draft-bhutton-json-schema-validation-00, section 6
 	Type              string              `json:"type,omitempty"`              // section 6.1.1
 	Enum              []interface{}       `json:"enum,omitempty"`              // section 6.1.2
@@ -182,6 +182,9 @@ type Reflector struct {
 	// ExpandedStruct when true will include the reflected type's definition in the
 	// root as opposed to a definition with a reference.
 	ExpandedStruct bool
+
+	// FieldNameTag will change the tag used to get field names. json tags are used by default.
+	FieldNameTag string
 
 	// IgnoredTypes defines a slice of types that should be ignored in the schema,
 	// switching to just allowing additional properties instead.
@@ -486,9 +489,7 @@ func (r *Reflector) reflectMap(definitions Definitions, t reflect.Type, st *Sche
 		return
 	}
 	if t.Elem().Kind() != reflect.Interface {
-		st.PatternProperties = map[string]*Schema{
-			".*": r.refOrReflectTypeToSchema(definitions, t.Elem()),
-		}
+		st.AdditionalProperties = r.refOrReflectTypeToSchema(definitions, t.Elem())
 	}
 }
 
@@ -508,12 +509,12 @@ func (r *Reflector) reflectStruct(definitions Definitions, t reflect.Type, s *Sc
 
 	r.addDefinition(definitions, t, s)
 	s.Type = "object"
-	s.Properties = orderedmap.New()
+	s.Properties = NewProperties()
 	s.Description = r.lookupComment(t, "")
 	if r.AssignAnchor {
 		s.Anchor = t.Name()
 	}
-	if !r.AllowAdditionalProperties {
+	if !r.AllowAdditionalProperties && s.AdditionalProperties == nil {
 		s.AdditionalProperties = FalseSchema
 	}
 
@@ -663,9 +664,9 @@ func (t *Schema) structKeywordsFromTags(f reflect.StructField, parent *Schema, p
 	case "string":
 		t.stringKeywords(tags)
 	case "number":
-		t.numbericKeywords(tags)
+		t.numericalKeywords(tags)
 	case "integer":
-		t.numbericKeywords(tags)
+		t.numericalKeywords(tags)
 	case "array":
 		t.arrayKeywords(tags)
 	case "boolean":
@@ -676,7 +677,7 @@ func (t *Schema) structKeywordsFromTags(f reflect.StructField, parent *Schema, p
 }
 
 // read struct tags for generic keyworks
-func (t *Schema) genericKeywords(tags []string, parent *Schema, propertyName string) {
+func (t *Schema) genericKeywords(tags []string, parent *Schema, propertyName string) { //nolint:gocyclo
 	for _, tag := range tags {
 		nameValue := strings.Split(tag, "=")
 		if len(nameValue) == 2 {
@@ -720,6 +721,21 @@ func (t *Schema) genericKeywords(tags []string, parent *Schema, propertyName str
 					parent.AnyOf = append(parent.AnyOf, typeFound)
 				}
 				typeFound.Required = append(typeFound.Required, propertyName)
+			case "oneof_ref":
+				subSchema := t
+				if t.Items != nil {
+					subSchema = t.Items
+				}
+				if subSchema.OneOf == nil {
+					subSchema.OneOf = make([]*Schema, 0, 1)
+				}
+				subSchema.Ref = ""
+				refs := strings.Split(nameValue[1], ";")
+				for _, r := range refs {
+					subSchema.OneOf = append(subSchema.OneOf, &Schema{
+						Ref: r,
+					})
+				}
 			case "oneof_type":
 				if t.OneOf == nil {
 					t.OneOf = make([]*Schema, 0, 1)
@@ -729,6 +745,21 @@ func (t *Schema) genericKeywords(tags []string, parent *Schema, propertyName str
 				for _, ty := range types {
 					t.OneOf = append(t.OneOf, &Schema{
 						Type: ty,
+					})
+				}
+			case "anyof_ref":
+				subSchema := t
+				if t.Items != nil {
+					subSchema = t.Items
+				}
+				if subSchema.AnyOf == nil {
+					subSchema.AnyOf = make([]*Schema, 0, 1)
+				}
+				subSchema.Ref = ""
+				refs := strings.Split(nameValue[1], ";")
+				for _, r := range refs {
+					subSchema.AnyOf = append(subSchema.AnyOf, &Schema{
+						Ref: r,
 					})
 				}
 			case "anyof_type":
@@ -795,7 +826,6 @@ func (t *Schema) stringKeywords(tags []string) {
 				switch val {
 				case "date-time", "email", "hostname", "ipv4", "ipv6", "uri", "uuid":
 					t.Format = val
-					break
 				}
 			case "readOnly":
 				i, _ := strconv.ParseBool(val)
@@ -812,8 +842,8 @@ func (t *Schema) stringKeywords(tags []string) {
 	}
 }
 
-// read struct tags for numberic type keyworks
-func (t *Schema) numbericKeywords(tags []string) {
+// read struct tags for numerical type keyworks
+func (t *Schema) numericalKeywords(tags []string) {
 	for _, tag := range tags {
 		nameValue := strings.Split(tag, "=")
 		if len(nameValue) == 2 {
@@ -835,8 +865,8 @@ func (t *Schema) numbericKeywords(tags []string) {
 				b, _ := strconv.ParseBool(val)
 				t.ExclusiveMinimum = b
 			case "default":
-				i, _ := strconv.Atoi(val)
-				t.Default = i
+				n, _ := strconv.ParseFloat(val, 64)
+				t.Default = n
 			case "example":
 				if i, err := strconv.Atoi(val); err == nil {
 					t.Examples = append(t.Examples, i)
@@ -893,6 +923,8 @@ func (t *Schema) arrayKeywords(tags []string) {
 				}
 			case "format":
 				t.Items.Format = val
+			case "pattern":
+				t.Items.Pattern = val
 			}
 		}
 	}
@@ -943,29 +975,29 @@ func (t *Schema) setExtra(key, val string) {
 	}
 }
 
-func requiredFromJSONTags(tags []string) bool {
+func requiredFromJSONTags(tags []string, val *bool) {
 	if ignoredByJSONTags(tags) {
-		return false
+		return
 	}
 
 	for _, tag := range tags[1:] {
 		if tag == "omitempty" {
-			return false
+			*val = false
+			return
 		}
 	}
-	return true
+	*val = true
 }
 
-func requiredFromJSONSchemaTags(tags []string) bool {
+func requiredFromJSONSchemaTags(tags []string, val *bool) {
 	if ignoredByJSONSchemaTags(tags) {
-		return false
+		return
 	}
 	for _, tag := range tags {
 		if tag == "required" {
-			return true
+			*val = true
 		}
 	}
-	return false
 }
 
 func nullableFromJSONSchemaTags(tags []string) bool {
@@ -988,8 +1020,15 @@ func ignoredByJSONSchemaTags(tags []string) bool {
 	return tags[0] == "-"
 }
 
+func (r *Reflector) fieldNameTag() string {
+	if r.FieldNameTag != "" {
+		return r.FieldNameTag
+	}
+	return "json"
+}
+
 func (r *Reflector) reflectFieldName(f reflect.StructField) (string, bool, bool, bool) {
-	jsonTagString, _ := f.Tag.Lookup("json")
+	jsonTagString := f.Tag.Get(r.fieldNameTag())
 	jsonTags := strings.Split(jsonTagString, ",")
 
 	if ignoredByJSONTags(jsonTags) {
@@ -1001,10 +1040,11 @@ func (r *Reflector) reflectFieldName(f reflect.StructField) (string, bool, bool,
 		return "", false, false, false
 	}
 
-	required := requiredFromJSONTags(jsonTags)
-	if r.RequiredFromJSONSchemaTags {
-		required = requiredFromJSONSchemaTags(schemaTags)
+	var required bool
+	if !r.RequiredFromJSONSchemaTags {
+		requiredFromJSONTags(jsonTags, &required)
 	}
+	requiredFromJSONSchemaTags(schemaTags, &required)
 
 	nullable := nullableFromJSONSchemaTags(schemaTags)
 
@@ -1044,29 +1084,29 @@ func (t *Schema) UnmarshalJSON(data []byte) error {
 		*t = *FalseSchema
 		return nil
 	}
-	type Schema_ Schema
+	type SchemaAlt Schema
 	aux := &struct {
-		*Schema_
+		*SchemaAlt
 	}{
-		Schema_: (*Schema_)(t),
+		SchemaAlt: (*SchemaAlt)(t),
 	}
 	return json.Unmarshal(data, aux)
 }
 
+// MarshalJSON is used to serialize a schema object or boolean.
 func (t *Schema) MarshalJSON() ([]byte, error) {
 	if t.boolean != nil {
 		if *t.boolean {
 			return []byte("true"), nil
-		} else {
-			return []byte("false"), nil
 		}
+		return []byte("false"), nil
 	}
 	if reflect.DeepEqual(&Schema{}, t) {
 		// Don't bother returning empty schemas
 		return []byte("true"), nil
 	}
-	type Schema_ Schema
-	b, err := json.Marshal((*Schema_)(t))
+	type SchemaAlt Schema
+	b, err := json.Marshal((*SchemaAlt)(t))
 	if err != nil {
 		return nil, err
 	}
