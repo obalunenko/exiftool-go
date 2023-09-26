@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/axw/gocov v1.1.0
 	github.com/golangci/golangci-lint v1.54.2
-	github.com/goreleaser/goreleaser v1.21.0
+	github.com/goreleaser/goreleaser v1.21.1
 	github.com/matm/gocov-html v1.4.0
 	github.com/mattn/goveralls v0.0.12
 	github.com/obalunenko/coverbadger v1.4.0
