@@ -1,3 +1,19 @@
+# Release (2023-10-06)
+
+## Module Highlights
+* `github.com/aws/smithy-go`: v1.15.0
+  * **Feature**: Add `http.WithHeaderComment` middleware.
+
+# Release (2023-08-18)
+
+* No change notes available for this release.
+
+# Release (2023-08-07)
+
+## Module Highlights
+* `github.com/aws/smithy-go`: v1.14.1
+  * **Bug Fix**: Prevent duplicated error returns in EndpointResolverV2 default implementation.
+
 # Release (2023-07-31)
 
 ## General Highlights
