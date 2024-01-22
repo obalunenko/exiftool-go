@@ -46,7 +46,7 @@ jobs:
         shell: bash
 
       - name: Set up cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-vendored-tools-${{ secrets.CACHE_VERSION }}
         with:
@@ -103,7 +103,7 @@ jobs:
         shell: bash
 
       - name: Set up cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-vendored-tools-${{ secrets.CACHE_VERSION }}
         with:
@@ -150,7 +150,7 @@ jobs:
         shell: bash
 
       - name: Set up cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-vendored-tools-${{ secrets.CACHE_VERSION }}
         with:
@@ -215,7 +215,7 @@ jobs:
         shell: bash
 
       - name: Set up cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-vendored-tools-${{ secrets.CACHE_VERSION }}
         with:
