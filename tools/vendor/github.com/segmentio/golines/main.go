@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime/pprof"
@@ -15,11 +15,13 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
-const (
-	versionStr = "0.11.0"
-)
-
 var (
+	// these values are provided automatically by Goreleaser
+	//   ref: https://goreleaser.com/customization/builds/
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+
 	// Flags
 	baseFormatterCmd = kingpin.Flag(
 		"base-formatter",
@@ -64,7 +66,7 @@ var (
 	tabLen = kingpin.Flag(
 		"tab-len",
 		"Length of a tab").Short('t').Default("4").Int()
-	version = kingpin.Flag(
+	versionFlag = kingpin.Flag(
 		"version",
 		"Print out version and exit").Default("false").Bool()
 	writeOutput = kingpin.Flag(
@@ -86,8 +88,9 @@ func main() {
 		log.SetLevel(log.InfoLevel)
 	}
 
-	if *version {
-		fmt.Printf("golines v%s\n", versionStr)
+	if *versionFlag {
+		fmt.Printf("golines v%s\n\nbuild information:\n\tbuild date: %s\n\tgit commit ref: %s\n",
+			version, date, commit)
 		return
 	}
 
@@ -128,7 +131,7 @@ func run() error {
 
 	if len(*paths) == 0 {
 		// Read input from stdin
-		contents, err := ioutil.ReadAll(os.Stdin)
+		contents, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			return err
 		}
@@ -211,7 +214,7 @@ func processFile(shortener *Shortener, path string) ([]byte, []byte, error) {
 
 	log.Debugf("Processing file %s", path)
 
-	contents, err := ioutil.ReadFile(path)
+	contents, err := os.ReadFile(path)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -247,12 +250,13 @@ func handleOutput(path string, contents []byte, result []byte) error {
 		if bytes.Equal(contents, result) {
 			log.Debugf("Contents unchanged, skipping write")
 			return nil
-		} else {
-			log.Debugf("Contents changed, writing output to %s", path)
-			return ioutil.WriteFile(path, result, info.Mode())
 		}
-	} else {
-		fmt.Print(string(result))
-		return nil
+
+		log.Debugf("Contents changed, writing output to %s", path)
+		return os.WriteFile(path, result, info.Mode())
 	}
+
+	fmt.Print(string(result))
+	return nil
+
 }
