@@ -13,19 +13,19 @@ echo "${SCRIPT_NAME} is running... "
 
 checkInstalled 'goreleaser'
 
-APP=instadiff-cli
+goreleaser healthcheck
 
-# Get new tags from the remote
-git fetch --tags -f
+APP=${APP_NAME}
+
+echo "${SCRIPT_NAME} is running fo ${APP}... "
 
 COMMIT="$(git rev-parse HEAD)"
 SHORTCOMMIT="$(git rev-parse --short HEAD)"
 DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-VERSION="$(git describe --tags --always "$(git rev-list --tags --max-count=1)")"
+VERSION="$(git tag | sort -V | tail -1)"
 GOVERSION="$(go version | awk '{print $3;}')"
 
-if [ -z "${VERSION}" ] || [ "${VERSION}" = "${SHORTCOMMIT}" ]
- then
+if [ -z "${VERSION}" ] || [ "${VERSION}" = "${SHORTCOMMIT}" ]; then
   VERSION="v0.0.0"
 fi
 
@@ -38,4 +38,4 @@ export GO_BUILD_LDFLAGS="-s -w \
 -X ${BUILDINFO_VARS_PKG}.appname=${APP} \
 -X ${BUILDINFO_VARS_PKG}.goversion=${GOVERSION}"
 
-goreleaser release --rm-dist
+goreleaser release --clean

@@ -2,16 +2,38 @@
 
 set -Eeuo pipefail
 
-function cleanup() {
-  trap - SIGINT SIGTERM ERR EXIT
-  echo "cleanup running"
-}
+SCRIPT_NAME="$(basename "$0")"
+SCRIPT_DIR="$(dirname "$0")"
+REPO_ROOT="$(cd "${SCRIPT_DIR}" && git rev-parse --show-toplevel)"
+SCRIPTS_DIR="${REPO_ROOT}/scripts"
 
-trap cleanup SIGINT SIGTERM ERR EXIT
+source "${SCRIPTS_DIR}/helpers-source.sh"
 
-SCRIPT_NAME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
+APP=${APP_NAME}
+
+RELEASE_BRANCH=${RELEASE_BRANCH:-"release"}
+
+echo "${SCRIPT_NAME} is running fo ${APP}... "
+
+checkInstalled 'svu'
 
 echo "${SCRIPT_NAME} is running... "
+
+function requireReleaseBranch() {
+  err=0
+  branch=$(git branch --show-current)
+
+  echo "Current branch is: ${branch}"
+
+  if [[ ${branch} != "${RELEASE_BRANCH}" ]]; then
+    err=1
+  fi
+
+   if [[ ${err} == 1 ]]; then
+        echo >&2 "Please checkout to ${RELEASE_BRANCH} branch."
+        exit 1
+    fi
+}
 
 function require_clean_work_tree() {
   # Update the index
@@ -39,7 +61,10 @@ function require_clean_work_tree() {
 }
 
 function menu() {
+  PREV_VERSION=$(svu current)
   clear
+
+  echo "Current version: ${PREV_VERSION}"
   printf "Select what you want to update: \n"
   printf "1 - Major update\n"
   printf "2 - Minor update\n"
@@ -50,15 +75,15 @@ function menu() {
   case "$selection" in
   1)
     printf "Major updates......\n"
-    NEW_VERSION=$(git tag | sed 's/\(.*v\)\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\2;\3;\4;\1/g' | sort -t';' -k 1,1n -k 2,2n -k 3,3n | tail -n 1 | awk -F';' '{printf "%s%d.%d.%d", $4, ($1+1),0,0 }')
+    NEW_VERSION=$(svu major)
     ;;
   2)
     printf "Run Minor update.........\n"
-    NEW_VERSION=$(git tag | sed 's/\(.*v\)\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\2;\3;\4;\1/g' | sort -t';' -k 1,1n -k 2,2n -k 3,3n | tail -n 1 | awk -F';' '{printf "%s%d.%d.%d", $4, $1,($2+1),0 }')
+    NEW_VERSION=$(svu minor)
     ;;
   3)
     printf "Patch update.........\n"
-    NEW_VERSION=$(git tag | sed 's/\(.*v\)\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\2;\3;\4;\1/g' | sort -t';' -k 1,1n -k 2,2n -k 3,3n | tail -n 1 | awk -F';' '{printf "%s%d.%d.%d", $4, $1,$2,($3 + 1) }')
+    NEW_VERSION=$(svu patch)
     ;;
   4)
     printf "Exit................................\n"
@@ -73,6 +98,9 @@ function menu() {
 
 }
 
+## Check if release branch
+requireReleaseBranch
+
 ## Check if git is clean
 require_clean_work_tree "create new version"
 
@@ -83,11 +111,6 @@ menu
 
 NEW_TAG=${NEW_VERSION}
 
-TAG_COMMIT=$(git rev-list --tags --max-count=1)
-CURRENT_TAG=$(git describe --tags "${TAG_COMMIT}")
-CHANGELOG="$(git log --pretty=format:"%s" HEAD..."${CURRENT_TAG}")"
-
-
 echo "New version is: ${NEW_TAG}"
 while true; do
   echo "Is it ok? (:y)?:"
@@ -95,8 +118,8 @@ while true; do
   case $yn in
   [Yy]*)
 
-    git tag -a "${NEW_TAG}" -m "${CHANGELOG}" && \
-     git push --tags
+  git tag -a "${NEW_TAG}" -m "${NEW_TAG}" &&
+      git push --tags
 
     break
     ;;

@@ -1,26 +1,30 @@
-NAME=instadiff-cli
 BIN_DIR=./bin
 
-# COLORS
-GREEN  := $(shell tput -Txterm setaf 2)
-YELLOW := $(shell tput -Txterm setaf 3)
-WHITE  := $(shell tput -Txterm setaf 7)
-RESET  := $(shell tput -Txterm sgr0)
+SHELL := env VERSION=$(VERSION) $(SHELL)
+VERSION ?= $(shell git describe --tags $(git rev-list --tags --max-count=1))
 
+APP_NAME?=ge-tax-calc
+SHELL := env APP_NAME=$(APP_NAME) $(SHELL)
+
+RELEASE_BRANCH?=master
+SHELL := env RELEASE_BRANCH=$(RELEASE_BRANCH) $(SHELL)
+
+COMPOSE_TOOLS_FILE=deployments/docker-compose/go-tools-docker-compose.yml
+COMPOSE_TOOLS_CMD_BASE=docker compose -f $(COMPOSE_TOOLS_FILE)
+COMPOSE_TOOLS_CMD_UP=$(COMPOSE_TOOLS_CMD_BASE) up --remove-orphans --exit-code-from
+COMPOSE_TOOLS_CMD_PULL=$(COMPOSE_TOOLS_CMD_BASE) build
+
+GOVERSION:=1.22
+EXIFTOOL_VERSION=12.76
 
 TARGET_MAX_CHAR_NUM=20
-
-
-define colored
-	@echo '${GREEN}$1${RESET}'
-endef
 
 ## Show help
 help:
 	${call colored, help is running...}
 	@echo ''
 	@echo 'Usage:'
-	@echo '  ${YELLOW}make${RESET} ${GREEN}<target>${RESET}'
+	@echo '  make <target>'
 	@echo ''
 	@echo 'Targets:'
 	@awk '/^[a-zA-Z\-\_0-9]+:/ { \
@@ -28,109 +32,116 @@ help:
 		if (helpMessage) { \
 			helpCommand = substr($$1, 0, index($$1, ":")-1); \
 			helpMessage = substr(lastLine, RSTART + 3, RLENGTH); \
-			printf "  ${YELLOW}%-$(TARGET_MAX_CHAR_NUM)s${RESET} ${GREEN}%s${RESET}\n", helpCommand, helpMessage; \
+			printf "  %-$(TARGET_MAX_CHAR_NUM)s %s\n", helpCommand, helpMessage; \
 		} \
 	} \
 	{ lastLine = $$0 }' $(MAKEFILE_LIST)
-
-## vet project
-vet:
-	./scripts/linting/run-vet.sh
-.PHONY: vet
-
-## Run full linting
-lint-full:
-	./scripts/linting/run-linters.sh
-.PHONY: lint-full
-
-## Run linting for build pipeline
-lint-pipeline:
-	./scripts/linting/golangci-pipeline.sh
-.PHONY: lint-pipeline
-
-## Run linting for sonar report
-lint-sonar:
-	./scripts/linting/golangci-sonar.sh
-.PHONY: lint-sonar
-
-## Test all packages
-test:
-	./scripts/tests/run.sh
-.PHONY: test
-
-test-integration:
-	./scripts/tests/run-integration.sh
-.PHONY: test-integration
-
-test-full: test test-integration
-.PHONY: test-integration
 
 ## Test coverage report.
 test-cover:
 	./scripts/tests/coverage.sh
 .PHONY: test-cover
 
-## Installs tools from vendor.
-install-tools: install-vendored-tools install-exiftool
-.PHONY: install-tools
+prepare-cover-report: test-cover
+	$(COMPOSE_TOOLS_CMD_UP) prepare-cover-report prepare-cover-report
+.PHONY: prepare-cover-report
 
-install-vendored-tools:
-	./scripts/install/vendored-tools.sh
-.PHONY: install-vendored-tools
+## Open coverage report.
+open-cover-report: prepare-cover-report
+	./scripts/open-coverage-report.sh
+.PHONY: open-cover-report
 
 install-exiftool:
-	./scripts/install/exiftool.sh
+	./scripts/install/exiftool.sh $(EXIFTOOL_VERSION)
 .PHONY: install-exiftool
 
-## Sync vendor of root project and tools.
+update-readme-cover: prepare-cover-report
+	$(COMPOSE_TOOLS_CMD_UP) update-readme-coverage update-readme-coverage
+.PHONY: update-readme-cover
+
+## Run tests.
+test:
+	$(COMPOSE_TOOLS_CMD_UP) run-tests run-tests
+.PHONY: test
+
+test-integration:
+	./scripts/tests/integration.sh
+.PHONY: test-integration
+
+## Run regression tests.
+test-regression: test
+.PHONY: test-regression
+
+## Sync vendor and install needed tools.
+configure: sync-vendor install-tools
+
+## Sync vendor with go.mod.
 sync-vendor:
 	./scripts/sync-vendor.sh
 .PHONY: sync-vendor
 
 ## Fix imports sorting.
 imports:
-	${call colored, fix-imports is running...}
-	./scripts/style/fix-imports.sh
+	$(COMPOSE_TOOLS_CMD_UP) fix-imports fix-imports
 .PHONY: imports
 
-## Format code.
+## Format code with go fmt.
 fmt:
-	${call colored, fmt is running...}
-	./scripts/style/fmt.sh
+	$(COMPOSE_TOOLS_CMD_UP) fix-fmt fix-fmt
 .PHONY: fmt
 
 ## Format code and sort imports.
 format-project: fmt imports
 .PHONY: format-project
 
-## Open coverage report.
-open-cover-report: test-cover
-	./scripts/open-coverage-report.sh
-.PHONY: open-cover-report
+## Installs vendored tools.
+install-tools: install-exiftool
+	$(COMPOSE_TOOLS_CMD_PULL)
+.PHONY: install-tools
 
-## Update readme coverage badge.
-update-readme-cover: test-cover
-	./scripts/update-readme-coverage.sh
-.PHONY: update-readme-cover
+## vet project
+vet:
+	$(COMPOSE_TOOLS_CMD_UP) vet vet
+.PHONY: vet
+
+## Run full linting
+lint-full:
+	$(COMPOSE_TOOLS_CMD_UP) lint-full lint-full
+.PHONY: lint-full
+
+## Run linting for build pipeline
+lint-pipeline:
+	$(COMPOSE_TOOLS_CMD_UP) lint-pipeline lint-pipeline
+.PHONY: lint-pipeline
+
+## Run linting for sonar report
+lint-sonar:
+	$(COMPOSE_TOOLS_CMD_UP) lint-sonar lint-sonar
+.PHONY: lint-sonar
 
 ## Release
 release:
-	./scripts/release/release.sh
+	$(COMPOSE_TOOLS_CMD_UP) release release
 .PHONY: release
 
 ## Release local snapshot
 release-local-snapshot:
-	./scripts/release/local-snapshot-release.sh
+	$(COMPOSE_TOOLS_CMD_UP) release-local-snapshot release-local-snapshot
 .PHONY: release-local-snapshot
 
 ## Check goreleaser config.
 check-releaser:
-	./scripts/release/check.sh
+	$(COMPOSE_TOOLS_CMD_UP) release-check-config release-check-config
 .PHONY: check-releaser
 
 ## Issue new release.
-new-version: test-full
+new-version: vet test-regression build
 	./scripts/release/new-version.sh
 .PHONY: new-release
 
-.DEFAULT_GOAL := test
+bump-go-version:
+	./scripts/bump-go.sh $(GOVERSION)
+.PHONY: bump-go-version
+
+.DEFAULT_GOAL := help
+

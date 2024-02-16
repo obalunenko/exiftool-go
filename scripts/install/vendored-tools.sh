@@ -42,7 +42,7 @@ function install_deps() {
   tools_module="$(go list -m)"
 
   go list -f '{{ join .Imports "\n" }}' -tags="tools" "${tools_module}" |
-   xargs -n 1 -P 0 -I {} bash -c 'install_dep "$@"' _ {}
+    xargs -n 1 -P 0 -I {} bash -c 'install_dep "$@"' _ {}
 }
 
 install_deps
