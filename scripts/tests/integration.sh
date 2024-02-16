@@ -11,6 +11,6 @@ if command -v "gotestsum" &>/dev/null; then
   GOTEST="gotestsum --format pkgname-and-test-fails --"
 fi
 
-${GOTEST} -race ./...
+INTEGRATION_TESTS=true ${GOTEST} -race ./...
 
 echo "${SCRIPT_NAME} done."

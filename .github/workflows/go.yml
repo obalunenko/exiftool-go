@@ -1,24 +1,40 @@
 name: Go [lint, test]
 
 on:
+  workflow_dispatch:
   push:
     branches:
-      - "master"
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches:
-      - "*"
+      - 'master'
     paths:
-      - "scripts/**"
-      - "tools/**"
-      - "**/*.go"
-      - "**/*.gohtml"
-      - "**/*.proto"
-      - "go.mod"
-      - "go.sum"
-      - "Makefile"
-      - "!**.*md"
-      - ".github/workflows/**"
+      - 'scripts/**'
+      - '**/*.go'
+      - '**/*.gohtml'
+      - '**/*.gotmpl'
+      - '**/*.proto'
+      - 'go.mod'
+      - 'go.sum'
+      - 'Makefile'
+      - '!**.*md'
+      - '.github/workflows/**'
+      - 'deployments/docker-compose/go-tools-docker-compose.yml'
+      - 'build/docker/go-tools/**'
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+    branches:
+      - '*'
+    paths:
+      - 'scripts/**'
+      - '**/*.go'
+      - '**/*.gohtml'
+      - '**/*.gotmpl'
+      - '**/*.proto'
+      - 'go.mod'
+      - 'go.sum'
+      - 'Makefile'
+      - '!**.*md'
+      - '.github/workflows/**'
+      - 'deployments/docker-compose/go-tools-docker-compose.yml'
+      - 'build/docker/go-tools/**'
 
 jobs:
   testing:
@@ -26,7 +42,7 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        os: ["ubuntu-22.04"]
+        os: [ 'ubuntu-22.04' ]
         go-version: [1.22.x]
     runs-on: ${{ matrix.os }}
     name: Run Tests
@@ -37,7 +53,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v5.0.0
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -46,7 +62,7 @@ jobs:
         shell: bash
 
       - name: Set up cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-vendored-tools-${{ secrets.CACHE_VERSION }}
         with:
@@ -74,12 +90,11 @@ jobs:
         shell: bash
 
   linting:
-    needs: testing
     strategy:
       fail-fast: false
       max-parallel: 2
       matrix:
-        os: ["ubuntu-22.04"]
+        os: [ 'ubuntu-22.04' ]
         go-version: [1.22.x]
     runs-on: ${{ matrix.os }}
     name: Run linters
@@ -90,7 +105,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v5.0.0
         with:
           go-version: ${{ matrix.go-version }}
       - run: |
@@ -103,54 +118,7 @@ jobs:
         shell: bash
 
       - name: Set up cache
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-vendored-tools-${{ secrets.CACHE_VERSION }}
-        with:
-          path: |
-            ${{ env.GOBIN }}
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/tools/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/tools/go.sum') }}
-
-      - name: Install tools
-        run: |
-          make install-vendored-tools
-        shell: bash
-
-      - name: Lint
-        run: |
-          make lint-pipeline
-        shell: bash
-
-  reports:
-    needs: linting
-    strategy:
-      fail-fast: true
-      max-parallel: 1
-      matrix:
-        os: ["ubuntu-22.04"]
-        go-version: [1.22.x]
-    runs-on: ${{ matrix.os }}
-    name: Quality reports
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go-version }}
-      - run: |
-          go version
-        shell: bash
-
-      - name: Set up cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-vendored-tools-${{ secrets.CACHE_VERSION }}
         with:
@@ -167,9 +135,56 @@ jobs:
           make install-tools
         shell: bash
 
-      - name: Prepare test coverage
+      - name: Lint
         run: |
-          make test-cover
+          make lint-pipeline
+        shell: bash
+
+  reports:
+    needs: [ testing, linting, build ]
+    strategy:
+      fail-fast: true
+      max-parallel: 1
+      matrix:
+        os: [ 'ubuntu-22.04' ]
+        go-version: [1.22.x]
+    runs-on: ${{ matrix.os }}
+    name: Quality reports
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up go
+        uses: actions/setup-go@v5.0.0
+        with:
+          go-version: ${{ matrix.go-version }}
+      - run: |
+          go version
+        shell: bash
+
+      - name: Set up cache
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-vendored-tools-${{ secrets.CACHE_VERSION }}
+        with:
+          path: |
+            ${{ env.GOBIN }}
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/tools/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/tools/go.sum') }}
+
+      - name: Install tools
+        run: |
+          make install-tools
+        shell: bash
+
+      - name: Prepare test coverage and reports
+        run: |
+          make prepare-cover-report
         shell: bash
 
       - name: Prepare lint report
@@ -189,50 +204,3 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  build:
-    needs: linting
-    strategy:
-      fail-fast: false
-      max-parallel: 2
-      matrix:
-        os: ["ubuntu-22.04"]
-        go-version: [1.22.x]
-    runs-on: ${{ matrix.os }}
-    name: Build
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go-version }}
-
-      - run: |
-          go version
-        shell: bash
-
-      - name: Set up cache
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-vendored-tools-${{ secrets.CACHE_VERSION }}
-        with:
-          path: |
-            ${{ env.GOBIN }}
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/tools/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/tools/go.sum') }}
-
-      - name: Install tools
-        run: |
-          make install-vendored-tools
-        shell: bash
-
-      - name: Check release
-        run: |
-          make check-releaser
-        shell: bash

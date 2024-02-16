@@ -11,37 +11,6 @@ echo "${SCRIPT_NAME} is running... "
 
 cd "${TOOLS_DIR}" || exit 1
 
-SUDO_CMD=""
-
-function osxInstall() {
-  echo "OSX"
-
-  SUDO_CMD="sudo "
-
-  install_deps
-}
-
-function linuxInstall() {
-  echo "LINUX"
-
-  DISTRO_ID=$(grep '^ID=' /etc/os-release | sed "s/ID=//")
-  echo "${DISTRO_ID}"
-
-  case "${DISTRO_ID}" in
-  alpine*)
-    SUDO_CMD=""
-
-    install_deps
-    ;;
-  ubuntu*)
-    SUDO_CMD="sudo "
-    install_deps
-    ;;
-  esac
-
-  cleanup
-}
-
 function check_status() {
   # first param is error message to print in case of error
   if [ $? -ne 0 ]; then
@@ -57,11 +26,9 @@ function check_status() {
 function install_dep() {
   dep=$1
 
-  bin_out=$GOBIN/$(echo $dep | awk 'BEGIN { FS="/" } {print $NF}')
+  echo "[INFO]: Going to build ${dep}"
 
-  echo "[INFO]: Going to build ${dep} - ${bin_out}"
-
-  ${SUDO_CMD}go build -mod=vendor -o "${bin_out}" "${dep}"
+  go install -mod=vendor "${dep}"
 
   check_status "[FAIL]: build [${dep}] failed!"
 
@@ -74,19 +41,8 @@ export -f check_status
 function install_deps() {
   tools_module="$(go list -m)"
 
-  go list -e -f '{{ join .Imports "\n" }}' -tags="tools" "${tools_module}" |
-   xargs -n 1 -P 0 -I {} bash -c 'install_dep "$@"' _ {}
+  go list -f '{{ join .Imports "\n" }}' -tags="tools" "${tools_module}" |
+    xargs -n 1 -P 0 -I {} bash -c 'install_dep "$@"' _ {}
 }
 
-OS_TYPE="$(uname -s | tr '[:upper:]' '[:lower:]')"
-case "$OS_TYPE" in
-darwin*)
-  osxInstall
-  ;;
-linux*)
-  linuxInstall
-  ;;
-msys* | cygwin*) echo "WINDOWS" ;;
-  ## TODO(o.balunenko): add windows installation.
-*) echo "unknown: $OS_TYPE" ;;
-esac
+install_deps

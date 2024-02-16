@@ -9,23 +9,21 @@ SCRIPTS_DIR="${REPO_ROOT}/scripts"
 
 source "${SCRIPTS_DIR}/helpers-source.sh"
 
-echo "${SCRIPT_NAME} is running... "
+APP=${APP_NAME}
+
+echo "${SCRIPT_NAME} is running fo ${APP}... "
 
 checkInstalled 'goreleaser'
 
-APP=exiftool-go
-
-# Get new tags from the remote
-git fetch --tags -f
+goreleaser healthcheck
 
 COMMIT="$(git rev-parse HEAD)"
 SHORTCOMMIT="$(git rev-parse --short HEAD)"
 DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-VERSION="$(git describe --tags --always "$(git rev-list --tags --max-count=1)")"
+VERSION="$(git tag | sort -V | tail -1)"
 GOVERSION="$(go version | awk '{print $3;}')"
 
-if [ -z "${VERSION}" ] || [ "${VERSION}" = "${SHORTCOMMIT}" ]
- then
+if [ -z "${VERSION}" ] || [ "${VERSION}" = "${SHORTCOMMIT}" ]; then
   VERSION="v0.0.0"
 fi
 
@@ -41,5 +39,3 @@ export GO_BUILD_LDFLAGS="-s -w \
 -X ${BUILDINFO_VARS_PKG}.goversion=${GOVERSION}"
 
 goreleaser check
-
-goreleaser build --rm-dist --single-target --snapshot

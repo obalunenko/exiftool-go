@@ -1,4 +1,4 @@
-name: Issue new release
+name: Lint & Test & Build & Release
 
 on:
   push:
@@ -8,9 +8,157 @@ on:
       - "!*"
 
 jobs:
-  release:
+  build:
     strategy:
-      fail-fast: true
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        os: [ 'ubuntu-22.04' ]
+        go-version: [1.22.x]
+    runs-on: ${{ matrix.os }}
+    name: Build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up go
+        uses: actions/setup-go@v5.0.0
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - run: |
+          go version
+        shell: bash
+
+      - name: Set up cache
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-vendored-tools-${{ secrets.CACHE_VERSION }}
+        with:
+          path: |
+            ${{ env.GOBIN }}
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/tools/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/tools/go.sum') }}
+
+      - name: Install tools
+        run: |
+          make install-tools
+        shell: bash
+
+      - name: Build
+        run: |
+          make build
+
+  regression_test:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        os: [ 'ubuntu-22.04' ]
+        go-version: [1.22.x]
+    runs-on: ${{ matrix.os }}
+    name: Regression tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up go
+        uses: actions/setup-go@v5.0.0
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - run: |
+          go version
+        shell: bash
+
+      - name: Set up cache
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-vendored-tools-${{ secrets.CACHE_VERSION }}
+        with:
+          path: |
+            ${{ env.GOBIN }}
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/tools/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/tools/go.sum') }}
+
+      - name: Install tools
+        run: |
+          make install-tools
+        shell: bash
+
+      - name: Run regression tests
+        env:
+          AOC_SESSION: ${{ secrets.AOC_SESSION }}
+        run: |
+          make test-regression
+        shell: bash
+
+  linting:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        os: [ 'ubuntu-22.04' ]
+        go-version: [1.22.x]
+    runs-on: ${{ matrix.os }}
+    name: Lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up go
+        uses: actions/setup-go@v5.0.0
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - run: |
+          go version
+        shell: bash
+
+      - name: Set up cache
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-vendored-tools-${{ secrets.CACHE_VERSION }}
+        with:
+          path: |
+            ${{ env.GOBIN }}
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/tools/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/tools/go.sum') }}
+
+      - name: Install tools
+        run: |
+          make install-tools
+        shell: bash
+
+      - name: Vet
+        run: |
+          make vet
+        shell: bash
+
+      - name: Lint
+        run: |
+          make lint-pipeline
+        shell: bash
+
+  release:
+    needs: [ build, regression_test, linting ]
+    strategy:
+      fail-fast: false
       max-parallel: 1
       matrix:
         os: [ 'ubuntu-22.04' ]
@@ -18,24 +166,24 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Release
     steps:
-      - name: Set up go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go-version }}
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+      - name: Set up go
+        uses: actions/setup-go@v5.0.0
         with:
-          install-only: true
+          go-version: ${{ matrix.go-version }}
+
+      - run: |
+          go version
+        shell: bash
 
       - name: Run GoReleaser
         if: success()
-        run: |
-          make release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          make release
+        shell: bash
