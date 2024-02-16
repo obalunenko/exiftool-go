@@ -8,6 +8,9 @@ WHITE  := $(shell tput -Txterm setaf 7)
 RESET  := $(shell tput -Txterm sgr0)
 
 
+GOVERSION:=1.22
+EXIFTOOL_VERSION=12.76
+
 TARGET_MAX_CHAR_NUM=20
 
 
@@ -79,7 +82,7 @@ install-vendored-tools:
 .PHONY: install-vendored-tools
 
 install-exiftool:
-	./scripts/install/exiftool.sh
+	./scripts/install/exiftool.sh $(EXIFTOOL_VERSION)
 .PHONY: install-exiftool
 
 ## Sync vendor of root project and tools.
@@ -132,5 +135,9 @@ check-releaser:
 new-version: test-full
 	./scripts/release/new-version.sh
 .PHONY: new-release
+
+bump-go-version:
+	./scripts/bump-go.sh $(GOVERSION)
+.PHONY: bump-go-version
 
 .DEFAULT_GOAL := test

@@ -1,6 +1,6 @@
 module github.com/obalunenko/exiftool-go/tools
 
-go 1.20
+go 1.22
 
 require (
 	github.com/axw/gocov v1.1.0
