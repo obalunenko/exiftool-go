@@ -61,7 +61,7 @@ function install_dep() {
 
   echo "[INFO]: Going to build ${dep} - ${bin_out}"
 
-  ${SUDO_CMD}go build -mod=readonly -o "${bin_out}" "${dep}"
+  ${SUDO_CMD}go build -mod=vendor -o "${bin_out}" "${dep}"
 
   check_status "[FAIL]: build [${dep}] failed!"
 
