@@ -26,9 +26,11 @@ function check_status() {
 function install_dep() {
   dep=$1
 
-  echo "[INFO]: Going to build ${dep}"
+  bin_out=$GOBIN/$(echo $dep | awk 'BEGIN { FS="/" } {print $NF}')
 
-  go install -mod=vendor "${dep}"
+  echo "[INFO]: Going to build ${dep} - ${bin_out}"
+
+  go build -mod=readonly -o "${bin_out}" "${dep}"
 
   check_status "[FAIL]: build [${dep}] failed!"
 
@@ -41,7 +43,7 @@ export -f check_status
 function install_deps() {
   tools_module="$(go list -m)"
 
-  go list -f '{{ join .Imports "\n" }}' -tags="tools" "${tools_module}" |
+  go list -e -f '{{ join .Imports "\n" }}' -tags="tools" "${tools_module}" |
    xargs -n 1 -P 0 -I {} bash -c 'install_dep "$@"' _ {}
 }
 
