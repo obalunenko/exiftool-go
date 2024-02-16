@@ -11,6 +11,37 @@ echo "${SCRIPT_NAME} is running... "
 
 cd "${TOOLS_DIR}" || exit 1
 
+SUDO_CMD=""
+
+function osxInstall() {
+  echo "OSX"
+
+  SUDO_CMD="sudo "
+
+  install_deps
+}
+
+function linuxInstall() {
+  echo "LINUX"
+
+  DISTRO_ID=$(grep '^ID=' /etc/os-release | sed "s/ID=//")
+  echo "${DISTRO_ID}"
+
+  case "${DISTRO_ID}" in
+  alpine*)
+    SUDO_CMD=""
+
+    install_deps
+    ;;
+  ubuntu*)
+    SUDO_CMD="sudo "
+    install_deps
+    ;;
+  esac
+
+  cleanup
+}
+
 function check_status() {
   # first param is error message to print in case of error
   if [ $? -ne 0 ]; then
@@ -30,7 +61,7 @@ function install_dep() {
 
   echo "[INFO]: Going to build ${dep} - ${bin_out}"
 
-  go build -mod=readonly -o "${bin_out}" "${dep}"
+  ${SUDO_CMD}go build -mod=readonly -o "${bin_out}" "${dep}"
 
   check_status "[FAIL]: build [${dep}] failed!"
 
@@ -47,4 +78,15 @@ function install_deps() {
    xargs -n 1 -P 0 -I {} bash -c 'install_dep "$@"' _ {}
 }
 
-install_deps
+OS_TYPE="$(uname -s | tr '[:upper:]' '[:lower:]')"
+case "$OS_TYPE" in
+darwin*)
+  osxInstall
+  ;;
+linux*)
+  linuxInstall
+  ;;
+msys* | cygwin*) echo "WINDOWS" ;;
+  ## TODO(o.balunenko): add windows installation.
+*) echo "unknown: $OS_TYPE" ;;
+esac
