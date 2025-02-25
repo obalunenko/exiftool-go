@@ -3,7 +3,7 @@ BIN_DIR=./bin
 SHELL := env VERSION=$(VERSION) $(SHELL)
 VERSION ?= $(shell git describe --tags $(git rev-list --tags --max-count=1))
 
-APP_NAME?=ge-tax-calc
+APP_NAME?=exiftool-go
 SHELL := env APP_NAME=$(APP_NAME) $(SHELL)
 
 RELEASE_BRANCH?=master
@@ -14,7 +14,7 @@ COMPOSE_TOOLS_CMD_BASE=docker compose -f $(COMPOSE_TOOLS_FILE)
 COMPOSE_TOOLS_CMD_UP=$(COMPOSE_TOOLS_CMD_BASE) up --remove-orphans --exit-code-from
 COMPOSE_TOOLS_CMD_PULL=$(COMPOSE_TOOLS_CMD_BASE) build
 
-GOVERSION:=1.22
+GOVERSION:=1.24
 EXIFTOOL_VERSION=12.76
 
 TARGET_MAX_CHAR_NUM=20

@@ -17,25 +17,4 @@ checkInstalled 'goreleaser'
 
 goreleaser healthcheck
 
-COMMIT="$(git rev-parse HEAD)"
-SHORTCOMMIT="$(git rev-parse --short HEAD)"
-DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-VERSION="$(git tag | sort -V | tail -1)"
-GOVERSION="$(go version | awk '{print $3;}')"
-
-if [ -z "${VERSION}" ] || [ "${VERSION}" = "${SHORTCOMMIT}" ]; then
-  VERSION="v0.0.0"
-fi
-
-VERSION="${VERSION}-local"
-
-BUILDINFO_VARS_PKG=github.com/obalunenko/version
-export GO_BUILD_LDFLAGS="-s -w \
--X ${BUILDINFO_VARS_PKG}.version=${VERSION} \
--X ${BUILDINFO_VARS_PKG}.commit=${COMMIT} \
--X ${BUILDINFO_VARS_PKG}.shortcommit=${SHORTCOMMIT} \
--X ${BUILDINFO_VARS_PKG}.builddate=${DATE} \
--X ${BUILDINFO_VARS_PKG}.appname=${APP} \
--X ${BUILDINFO_VARS_PKG}.goversion=${GOVERSION}"
-
 goreleaser --snapshot --skip=publish --clean
